@@ -1,7 +1,7 @@
 import os
 
 
-PROJECT_NAME = 'django-fiber-example'
+PROJECT_NAME = ''
 
 defaults = {
     'project_name': PROJECT_NAME,

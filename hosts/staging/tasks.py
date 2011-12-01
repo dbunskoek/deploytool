@@ -2,7 +2,6 @@ from fabric.api import env
 from fabric.tasks import Task
 
 from hosts.staging.host import StagingHost
-import utils
 
 
 class StagingTaskBase(Task):

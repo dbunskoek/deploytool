@@ -10,7 +10,7 @@ class StagingHost(FabricEnvironmentUpdater):
     instance = None
     settings = {
         'environment': 'staging',
-        'hosts': ['lithium-oxide', ],
+        'hosts': ['', ],
         'project_root': os.path.join('/', 'var', 'www', 'vhosts'),
     }
 
