@@ -1,6 +1,3 @@
-import os
-
-
 PROJECT_NAME = ''
 
 defaults = {
