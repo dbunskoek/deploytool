@@ -1,5 +1,3 @@
-from fabric.api import env
-
 import hosts.live.tasks as live
 import hosts.local.tasks as local
 import hosts.staging.tasks as staging
