@@ -1,4 +1,4 @@
-from fabric.api import *
+from fabric.api import run
 import os
 import subprocess
 
@@ -9,32 +9,32 @@ def touch_wsgi(project_path):
     return run('touch %s/django.wsgi' % project_path)
 
 
-def python_run(command):
+def python_run(virtualenv_path, command):
     """ Helper to execute Python commands for current virtual environment """
 
-    return run('%s/bin/python %s' % (env.virtualenv_path, command))
+    return run('%s/bin/python %s' % (virtualenv_path, command))
 
 
-def django_manage(command):
+def django_manage(virtualenv_path, source_path, command):
     """ Helper to execute Django management commands """
 
-    with settings(hide('stdout'), warn_only=True):
-        path = os.path.join(env.source_path, 'manage.py')
-        python_run('%s %s' % (path, command))
+    python_path = os.path.join(source_path, 'manage.py')
+    python_command = '%s %s' % (python_path, command)
+    python_run(virtualenv_path, python_command)
 
 
-def sql_execute_query(query):
+def sql_execute_query(virtualenv_path, scripts_path, query):
     """ Helper to execute mysql command executing supplied query """
 
-    path = os.path.join(env.project_path, env.scripts_path)
-    python_run('%s/sql_query.py "%s"' % (path, query))
+    python_command = '%s/sql_query.py "%s"' % (scripts_path, query)
+    python_run(virtualenv_path, python_command)
 
 
-def sql_execute_file(filename):
+def sql_execute_file(virtualenv_path, scripts_path, filename):
     """ Helper to execute mysql file """
 
-    path = os.path.join(env.project_path, env.scripts_path)
-    python_run('%s/sql_file.py "%s"' % (path, filename))
+    python_command = '%s/sql_file.py "%s"' % (scripts_path, filename)
+    python_run(virtualenv_path, python_command)
 
 
 def subprocess_popen(args):

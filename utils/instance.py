@@ -39,7 +39,7 @@ def copy(from_path, to_path):
     run('cp %s %s' % (from_path, to_path))
 
 
-def create_virtualenv(virtualenv_path, source_path, cache_path):
+def create_virtualenv(virtualenv_path, source_path, cache_path, log_path):
     """ Creates virtual environment for instance and installs packages. """
 
     requirements_file = os.path.join(source_path, 'requirements.txt')
@@ -51,7 +51,7 @@ def create_virtualenv(virtualenv_path, source_path, cache_path):
         abort(red('Could not install packages. Virtual environment or requirements.txt not found.'))
 
     with settings(hide('stdout'), warn_only=True):
-        pip_log_file = os.path.join(env.log_path, 'pip.log')
+        pip_log_file = os.path.join(log_path, 'pip.log')
         run('rm -f %s' % pip_log_file)
         run('pip install -E %s -r %s --download-cache=%s --log=%s' % (
                 virtualenv_path,
@@ -74,10 +74,10 @@ def set_current(project_path, instance_path):
         run('ln -sf %s ./current_instance' % instance_path)
 
 
-def rollback():
+def rollback(project_path, current_instance, previous_instance):
     """ Set previous instance to current and remove current """
 
-    with cd(env.project_path):
-        if exists('./%(previous_instance)s' % env):
-            run('rm -rf ./%(current_instance)s' % env)
-            run('mv ./%(previous_instance)s ./%(current_instance)s' % env)
+    with cd(project_path):
+        if exists('./%s' % previous_instance):
+            run('rm -rf ./%s' % current_instance)
+            run('mv ./%s ./%s' % (previous_instance, current_instance))

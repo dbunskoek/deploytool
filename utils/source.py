@@ -1,5 +1,4 @@
 from fabric.api import run
-from fabric.colors import red
 from fabric.contrib.files import local, put
 import os
 

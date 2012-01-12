@@ -5,5 +5,5 @@ import settings
 
 
 # Create available tasks
-staging.deploy = staging.Deployment(project_settings=settings.defaults)
-staging.rollback = staging.Rollback(project_settings=settings.defaults)
+staging.deploy = staging.Deployment(project_settings=settings.DEFAULTS)
+staging.rollback = staging.Rollback(project_settings=settings.DEFAULTS)

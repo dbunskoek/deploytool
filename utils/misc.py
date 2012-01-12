@@ -17,18 +17,17 @@ def get_remote_file(remote_file_path, local_file_path, delete_remote_file=False)
         run('rm -rf %s' % remote_file_path)
 
 
-def write_log(task, instance='', log_file='fabric.log'):
-    """ Logs executed task """
+def write_log(message, log_path, log_file='fabric.log'):
+    """ Logs message """
 
-    if instance:
-        instance = ' for %s' % instance
+    # if instance:
+    #     instance = ' for %s' % instance
+    # msg = '[%s]\t%s in %s by %s%s' % (
+    #     datetime.datetime.today().strftime('%Y-%m-%d %H:%M'),
+    #     task.upper(),
+    #     env.environment.upper(),
+    #     env.local_user.upper(),
+    #     instance
+    # )
 
-    fabric_log_file = os.path.join(env.log_path, log_file)
-    msg = '[%s]\t%s in %s by %s%s' % (
-        datetime.datetime.today().strftime('%Y-%m-%d %H:%M'),
-        task.upper(),
-        env.environment.upper(),
-        env.local_user.upper(),
-        instance
-    )
-    append(fabric_log_file, msg)
+    append(os.path.join(log_path, log_file), message)
