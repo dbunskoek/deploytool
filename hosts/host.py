@@ -1,4 +1,5 @@
 from fabric.api import env
+from fabric.colors import *
 
 import utils
 
@@ -23,6 +24,7 @@ class Host(object):
 
     def reload(self):
 
+        print(green('\nRestarting website.'))
         utils.commands.touch_wsgi(env.project_path)
 
     def get_settings_for_host(self):
@@ -32,6 +34,13 @@ class Host(object):
     def get_settings_for_instance(self):
 
         raise NotImplementedError
+
+    def load_current_instance(self):
+        """ Configures settings for current(ly active) instance """
+
+        print(green('\nUpdating settings for current instance.'))
+        current_instance_stamp = utils.instance.get_current_instance_stamp(env.current_instance_path)
+        self.update_settings_for_instance(stamp=current_instance_stamp)
 
     def update_settings_for_instance(self, stamp):
 

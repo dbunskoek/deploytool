@@ -1,5 +1,6 @@
 import datetime
 from fabric.api import *
+from fabric.colors import *
 from fabric.contrib.files import *
 
 import utils
@@ -39,28 +40,28 @@ def copy(from_path, to_path):
     run('cp %s %s' % (from_path, to_path))
 
 
-def create_virtualenv(virtualenv_path, source_path, cache_path, log_path):
+def create_virtualenv(virtualenv_path):
     """ Creates virtual environment for instance and installs packages. """
 
-    requirements_file = os.path.join(source_path, 'requirements.txt')
+    run('virtualenv %s --no-site-packages' % virtualenv_path)
 
-    with settings(hide('stdout'), warn_only=True):
-        run('virtualenv %s --no-site-packages' % virtualenv_path)
+
+def pip_install_requirements(virtualenv_path, source_path, cache_path):
+    """ Requires availability of Pip (0.8.1 or later) on remote system """
+
+    requirements_file = os.path.join(source_path, 'requirements.txt')
 
     if not exists(requirements_file) or not exists(virtualenv_path):
         abort(red('Could not install packages. Virtual environment or requirements.txt not found.'))
 
-    with settings(hide('stdout'), warn_only=True):
-        pip_log_file = os.path.join(log_path, 'pip.log')
-        run('rm -f %s' % pip_log_file)
-        run('pip install -E %s -r %s --download-cache=%s --log=%s' % (
-                virtualenv_path,
-                requirements_file,
-                cache_path,
-                pip_log_file
-            )
-        )
+    args = (virtualenv_path, requirements_file, cache_path)
+    run('pip install -E %s -r %s --download-cache=%s --use-mirrors' % args)
 
+
+def get_current_instance_stamp(current_instance_path):
+    """ Reads symlinked current_instance and returns its sliced off stamp (e.g. 1201131600)  """
+
+    return run('readlink -f %s' % current_instance_path).strip()[-10:]
 
 def set_current(project_path, instance_path):
     """ Set current instance to previous and new to current """

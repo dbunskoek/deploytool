@@ -1,9 +1,10 @@
+from fabric.colors import *
 from fabric.tasks import Task
 
 from hosts.staging.host import StagingHost
 
 
-class StagingTaskBase(Task):
+class StagingTask(Task):
     """ Base class for Task providing link to Host """
 
     def __init__(self, *args, **kwargs):
@@ -11,35 +12,47 @@ class StagingTaskBase(Task):
         self.host = StagingHost(project_settings=kwargs['project_settings'])
 
 
-class Deployment(StagingTaskBase):
+class Deployment(StagingTask):
     """ Deploys latest source as new instance """
 
     name = 'deploy'
 
     def run(self):
 
-        instance = self.host.instance
+        print(yellow('\nStart task - deploy to staging'))
 
         try:
-            instance.deploy()
-        except SystemExit:
-            instance.delete()
+            self.host.instance.deploy()
+        except SystemExit, e:
+            print(red('Create instance failed. Rolling back deployment ...'))
+            self.host.instance.delete()
 
         try:
-            instance.update_database()
-        except SystemExit:
-            instance.restore_database()
-            instance.delete()
+            self.host.instance.update_database()
+        except SystemExit, e:
+            print(red('Update database failed. Rolling back deployment ...'))
+            self.host.instance.restore_database()
+            self.host.instance.delete()
 
-        instance.set_current()
+        self.host.instance.set_current()
         self.host.reload()
 
 
-class Rollback(StagingTaskBase):
+class Rollback(StagingTask):
     """ Rollback current instance to previous instance """
 
     name = 'rollback'
 
     def run(self):
 
-        raise NotImplementedError
+        print(yellow('\nStart task - rollback to previous'))
+        self.host.load_current_instance()
+        
+        try:
+            self.host.instance.rollback()
+            self.host.reload()
+            self.host.instance.delete()
+        except SystemExit, e:
+            print(red('Rollback failed: %s ' % e.message))
+
+

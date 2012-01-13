@@ -1,2 +1,1 @@
 import hosts
-import settings

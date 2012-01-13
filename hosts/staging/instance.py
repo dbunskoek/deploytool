@@ -1,4 +1,5 @@
 from fabric.api import env
+from fabric.colors import *
 from fabric.contrib.files import exists
 import os
 
@@ -25,6 +26,7 @@ class StagingInstance(object):
 
     def create_folders(self):
 
+        print(green('\nCreating folders.'))
         folders_to_create = [
             env.instance_path,
             env.backup_path,
@@ -38,7 +40,10 @@ class StagingInstance(object):
     def deploy_source(self):
         """ Tag VCS, and transfer source from VCS to staging """
 
+        print(green('\nTagging source code in git.'))
         utils.source.create_tag(self.stamp)
+
+        print(green('\nFetching and deploying source code.'))
         utils.source.transfer_source(
             download_url = env.project_vcs_wget,
             upload_path = env.source_path,
@@ -48,6 +53,7 @@ class StagingInstance(object):
     def copy_settings_file(self):
         """ Copy django settings from project to instance """
 
+        print(green('\nCopying settings.'))
         utils.instance.copy(
             from_path = os.path.join(env.project_path, 'settings.py'),
             to_path = os.path.join(env.source_path, 'settings.py')
@@ -56,6 +62,7 @@ class StagingInstance(object):
     def link_media_folder(self):
         """ Link instance media folder to project media folder """
 
+        print(green('\nLinking media folder.'))
         utils.instance.create_symbolic_link(
             real_path = os.path.join(env.project_path, 'media'),
             symbolic_path = os.path.join(env.instance_path, 'media')
@@ -63,35 +70,46 @@ class StagingInstance(object):
 
     def collect_static_files(self):
 
+        print(green('\nCollecting static files.'))
         command = 'collectstatic --link --noinput --verbosity=0 --traceback'
         utils.commands.django_manage(env.virtualenv_path, env.source_path, command)
 
     def create_virtualenv(self):
 
-        utils.instance.create_virtualenv(
+        print(green('\nCreating virtual environment.'))
+        utils.instance.create_virtualenv(env.virtualenv_path)
+
+        print(green('\nPip installing requirements.'))
+        utils.instance.pip_install_requirements(
             env.virtualenv_path,
             env.source_path,
-            env.cache_path,
-            env.log_path
+            env.cache_path
         )
 
     def delete(self):
-        """ Delete instance from filesystem and remove tag from VCS """
+        """ Delete instance from filesystem and remove tag from git """
 
+        print(green('\nRemoving instance from filesystem.'))
         utils.instance.delete_folder(env.instance_path)
+
+        print(green('\nRemoving tag from git.'))
         utils.source.delete_tag(self.stamp)
 
     def update_database(self, migrate=False, backup=True):
 
         if backup:
+            print(green('\nBackup database at start.'))
             self.backup_database(postfix='_start')
 
+        print(green('\nSyncing database.'))
         utils.commands.django_manage(env.virtualenv_path, env.source_path, 'syncdb')
 
         if migrate:
+            print(green('\nMigrating database.'))
             utils.commands.django_manage(env.virtualenv_path, env.source_path, 'migrate')
 
         if backup:
+            print(green('\nBackup database at end.'))
             self.backup_database(postfix='_end')
 
     def backup_database(self, postfix=''):
@@ -103,6 +121,7 @@ class StagingInstance(object):
     def restore_database(self):
 
         backup_file = os.path.join(env.backup_path, 'db_backup_start.sql')
+
         if not exists(backup_file):
             raise SystemExit('Could not find backupfile to restore database with.')
 
@@ -112,19 +131,20 @@ class StagingInstance(object):
 
     def set_current(self):
 
+        print(green('\nUpdating instance symlinks.'))
         utils.instance.set_current(env.project_path, env.instance_path)
 
     def rollback(self):
         """ Removes current instance and rolls back to previous (if any). """
 
-        # switch instances
-        # update settings for changed current instance
-        # restore database
+        if not exists(env.previous_instance_path):
+            raise SystemExit('No rollback possible. No previous instance found to rollback to.')
 
-        # utils.instance.rollback(env.project_path)
-        # 
-        # self.stamp = None
-        # 
-        # 
-        # backup_file = os.path.join(env.current_instance_path, 'db_backup_start.sql')
-        # self.restore_database(backup_file=backup_file)
+        # restore database to the start-state of the (to be removed) current instance
+        print(green('\nRestoring database to start of this instance.'))
+        self.restore_database()
+
+        # remove current instance and set previous to current
+        print(green('\nRemoving this instance and set previous to current.'))
+        utils.instance.rollback(env.project_path)
+
