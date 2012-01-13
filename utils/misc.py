@@ -1,4 +1,5 @@
 from fabric import *
+from fabric.api import env
 from pprint import pprint
 
 
@@ -20,14 +21,4 @@ def get_remote_file(remote_file_path, local_file_path, delete_remote_file=False)
 def write_log(message, log_path, log_file='fabric.log'):
     """ Logs message """
 
-    # if instance:
-    #     instance = ' for %s' % instance
-    # msg = '[%s]\t%s in %s by %s%s' % (
-    #     datetime.datetime.today().strftime('%Y-%m-%d %H:%M'),
-    #     task.upper(),
-    #     env.environment.upper(),
-    #     env.local_user.upper(),
-    #     instance
-    # )
-
-    append(os.path.join(log_path, log_file), message)
+    raise NotImplementedError

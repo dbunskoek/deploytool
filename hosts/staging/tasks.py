@@ -21,7 +21,7 @@ class Deployment(StagingTaskBase):
         instance = self.host.instance
 
         try:
-            instance.create()
+            instance.deploy()
         except SystemExit:
             instance.delete()
 
@@ -31,7 +31,8 @@ class Deployment(StagingTaskBase):
             instance.restore_database()
             instance.delete()
 
-        instance.update_webserver()
+        instance.set_current()
+        self.host.reload()
 
 
 class Rollback(StagingTaskBase):

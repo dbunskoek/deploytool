@@ -1,4 +1,5 @@
 from fabric.api import env
+from fabric.contrib.files import exists
 import os
 
 import utils
@@ -12,7 +13,7 @@ class StagingInstance(object):
 
         self.stamp = utils.instance.create_stamp()
 
-    def create(self):
+    def deploy(self):
         """ Creates project-instance from fabric-environment """
 
         self.create_folders()
@@ -102,15 +103,28 @@ class StagingInstance(object):
     def restore_database(self):
 
         backup_file = os.path.join(env.backup_path, 'db_backup_start.sql')
-
-        # todo check exist backup_file before dropping db
+        if not exists(backup_file):
+            raise SystemExit('Could not find backupfile to restore database with.')
 
         utils.commands.python_run(env.virtualenv_path, '%s/db_drop.py' % env.scripts_path)
         utils.commands.python_run(env.virtualenv_path, '%s/db_create.py' % env.scripts_path)
         utils.commands.sql_execute_file(env.virtualenv_path, env.scripts_path, backup_file)
 
-    def update_webserver(self):
-        """ Set new instance as current and touch project-WSGI """
+    def set_current(self):
 
         utils.instance.set_current(env.project_path, env.instance_path)
-        utils.commands.touch_wsgi(env.project_path)
+
+    def rollback(self):
+        """ Removes current instance and rolls back to previous (if any). """
+
+        # switch instances
+        # update settings for changed current instance
+        # restore database
+
+        # utils.instance.rollback(env.project_path)
+        # 
+        # self.stamp = None
+        # 
+        # 
+        # backup_file = os.path.join(env.current_instance_path, 'db_backup_start.sql')
+        # self.restore_database(backup_file=backup_file)

@@ -74,10 +74,10 @@ def set_current(project_path, instance_path):
         run('ln -sf %s ./current_instance' % instance_path)
 
 
-def rollback(project_path, current_instance, previous_instance):
-    """ Set previous instance to current and remove current """
+def rollback(project_path):
+    """ Remove current instance and rename previous to current """
 
     with cd(project_path):
-        if exists('./%s' % previous_instance):
-            run('rm -rf ./%s' % current_instance)
-            run('mv ./%s ./%s' % (previous_instance, current_instance))
+        if exists('./previous_instance'):
+            run('rm -rf ./current_instance')
+            run('mv ./previous_instance ./current_instance')

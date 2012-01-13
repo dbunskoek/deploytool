@@ -1,8 +1,11 @@
 from fabric.api import env
 
+import utils
 
-class FabricEnvironmentUpdater(object):
+
+class Host(object):
     """
+    Generic Host class.
     Collection of all settings (Project, Host, Instance).
     Updates fabric environment.
     """
@@ -16,11 +19,11 @@ class FabricEnvironmentUpdater(object):
         self.settings.update(self.get_settings_for_host())
         self.settings.update(self.get_settings_for_instance())
 
-        self.update_fabric_environment()
-
-    def update_fabric_environment(self):
-
         env.update(self.settings)
+
+    def reload(self):
+
+        utils.commands.touch_wsgi(env.project_path)
 
     def get_settings_for_host(self):
 
@@ -29,3 +32,10 @@ class FabricEnvironmentUpdater(object):
     def get_settings_for_instance(self):
 
         raise NotImplementedError
+
+    def update_settings_for_instance(self, stamp):
+
+        self.instance.stamp = stamp
+        self.settings.update(self.get_settings_for_instance())
+
+        env.update(self.settings)

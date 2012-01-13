@@ -1,13 +1,13 @@
 import os
 
-from hosts.base import FabricEnvironmentUpdater
+from hosts.host import Host
 from hosts.staging.instance import StagingInstance
 
 
-class StagingHost(FabricEnvironmentUpdater):
+class StagingHost(Host):
     """ Configuration for staging environment """
 
-    host_names = None   # e.g. ['127.0.0.1', ]
+    host_names = None # e.g. ['127.0.0.1', ]
 
     def __init__(self, *args, **kwargs):
 
@@ -22,9 +22,11 @@ class StagingHost(FabricEnvironmentUpdater):
 
         return {
             'cache_path': os.path.join(project_root, 'python_egg_cache'),
+            'current_instance_path': os.path.join(project_path, 'current_instance'),
             'database_name': staging_project_name,
             'hosts': self.host_names,
             'log_path': os.path.join(project_path, 'log'),
+            'previous_instance_path': os.path.join(project_path, 'previous_instance'),
             'project_root': project_root,
             'project_path': project_path,
             'scripts_path': os.path.join(project_path, 'scripts'),
