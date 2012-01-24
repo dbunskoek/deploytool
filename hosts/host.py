@@ -39,8 +39,9 @@ class Host(object):
         """ Configures settings for current(ly active) instance """
 
         print(green('\nUpdating settings for current instance.'))
-        current_instance_stamp = utils.instance.get_current_instance_stamp(env.current_instance_path)
-        self.update_settings_for_instance(stamp=current_instance_stamp)
+        self.update_settings_for_instance(
+            stamp = deployment.utils.instance.get_current_instance_stamp(env.current_instance_path)
+        )
 
     def update_settings_for_instance(self, stamp):
 

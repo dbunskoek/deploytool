@@ -28,10 +28,9 @@ def copy(from_path, to_path):
 
 
 def create_virtualenv(virtualenv_path, project_user):
-    """ SUDO - Creates virtual environment for instance and installs packages. """
+    """ Creates virtual environment for instance and installs packages. """
 
     run('virtualenv %s --no-site-packages' % virtualenv_path)
-    # sudo('chown -r %s:%s %s' % (project_user, project_user, virtualenv_path))
 
 
 def pip_install_requirements(virtualenv_path, source_path, cache_path):
