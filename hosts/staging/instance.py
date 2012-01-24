@@ -1,4 +1,4 @@
-from fabric.api import env
+from fabric.api import env, settings, hide, abort
 from fabric.colors import *
 from fabric.contrib.files import exists
 import os
@@ -20,23 +20,30 @@ class StagingInstance(object):
             PROJECTNAME/
     """
 
-    def __init__(self, *args, **kwargs):
-        """ Set instance stamp to HEAD """
+    stamp = None
 
-        if utils.source.get_branch_name() != 'master':
-            raise SystemExit(red('Deploy only possible on branch master.'))
-    
+    def __init__(self, *args, **kwargs):
+        """ Set instance stamp to HEAD by default. """
+
         self.stamp = utils.source.get_head()
 
-    def deploy(self):
-        """ Creates project-instance from fabric-environment """
+    def check_deploy(self):
+        """ Check deployment requirements and aborts task if not ok. """
 
-        self.create_folders()
-        self.deploy_source()
-        self.create_virtualenv()
-        self.copy_settings_file()
-        self.link_media_folder()
-        self.collect_static_files()
+        current_instance_stamp = utils.instance.get_instance_stamp(env.current_instance_path)
+        previous_instance_stamp = utils.instance.get_instance_stamp(env.previous_instance_path)
+
+        if utils.source.get_branch_name() != 'master':
+            abort(red('Deploy only possible on branch master.'))
+
+        if self.stamp == current_instance_stamp:
+            abort(red('Deploy aborted because HEAD is already the current instance.'))
+
+        if self.stamp == previous_instance_stamp:
+            abort(red('Deploy aborted because HEAD is the previous instance. Use rollback task instead.'))
+
+        if exists(env.instance_path):
+            abort(red('Deploy aborted because this instance has already been deployed.'))
 
     def create_folders(self):
 
@@ -53,7 +60,7 @@ class StagingInstance(object):
 
     def deploy_source(self):
 
-        print(green('\nFetching and deploying source code.'))
+        print(green('\nDeploying source.'))
         utils.source.transfer_source(upload_path=env.source_path)
 
     def copy_settings_file(self):
@@ -101,7 +108,7 @@ class StagingInstance(object):
     def update_database(self, migrate=False, backup=True):
 
         if backup:
-            print(green('\nBackup database at start.'))
+            print(green('\nBacking up database at start.'))
             self.backup_database(postfix='_start')
 
         print(green('\nSyncing database.'))
@@ -112,7 +119,7 @@ class StagingInstance(object):
             utils.commands.django_manage(env.virtualenv_path, env.source_path, 'migrate')
 
         if backup:
-            print(green('\nBackup database at end.'))
+            print(green('\nBacking up database at end.'))
             self.backup_database(postfix='_end')
 
     def backup_database(self, postfix=''):
@@ -125,9 +132,6 @@ class StagingInstance(object):
 
         backup_file = os.path.join(env.backup_path, 'db_backup_start.sql')
 
-        if not exists(backup_file):
-            raise SystemExit('Could not find backupfile to restore database with.')
-
         utils.commands.python_run(env.virtualenv_path, '%s/db_drop.py' % env.scripts_path)
         utils.commands.python_run(env.virtualenv_path, '%s/db_create.py' % env.scripts_path)
         utils.commands.sql_execute_file(env.virtualenv_path, env.scripts_path, backup_file)
@@ -135,13 +139,22 @@ class StagingInstance(object):
     def set_current(self):
 
         print(green('\nUpdating instance symlinks.'))
-        utils.instance.set_current(env.project_path, env.instance_path)
+        utils.instance.set_current_instance(env.project_path, env.instance_path)
+
+    def check_rollback(self):
+        """ Check requirements for rollback and abort if not ok. """
+
+        backup_file = os.path.join(env.backup_path, 'db_backup_start.sql')
+
+        if not exists(env.previous_instance_path):
+            abort(red('No rollback possible. No previous instance found to rollback to.'))
+
+        if not exists(backup_file):
+            abort(red('Could not find backupfile to restore database with.'))
+
 
     def rollback(self):
         """ Removes current instance and rolls back to previous (if any). """
-
-        if not exists(env.previous_instance_path):
-            raise SystemExit('No rollback possible. No previous instance found to rollback to.')
 
         # restore database to the start-state of the (to be removed) current instance
         print(green('\nRestoring database to start of this instance.'))

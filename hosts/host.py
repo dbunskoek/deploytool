@@ -1,7 +1,7 @@
 from fabric.api import env
 from fabric.colors import *
 
-import deployment.utils
+import deployment.utils as utils
 
 
 class Host(object):
@@ -25,7 +25,7 @@ class Host(object):
     def reload(self):
 
         print(green('\nRestarting website.'))
-        deployment.utils.commands.touch_wsgi(env.project_path)
+        utils.commands.touch_wsgi(env.project_path)
 
     def get_settings_for_host(self):
 
@@ -40,7 +40,7 @@ class Host(object):
 
         print(green('\nUpdating settings for current instance.'))
         self.update_settings_for_instance(
-            stamp = deployment.utils.instance.get_current_instance_stamp(env.current_instance_path)
+            stamp = utils.instance.get_instance_stamp(env.current_instance_path)
         )
 
     def update_settings_for_instance(self, stamp):

@@ -19,7 +19,7 @@ def delete_folder(path):
 
 def create_symbolic_link(real_path, symbolic_path):
 
-    run('ln -s %s %s' % (real_path, symbolic_path))
+    run('ln -sf %s %s' % (real_path, symbolic_path))
 
 
 def copy(from_path, to_path):
@@ -27,8 +27,13 @@ def copy(from_path, to_path):
     run('cp %s %s' % (from_path, to_path))
 
 
+def rename(old_path, new_path):
+
+    run('mv %s %s' % (old_path, new_path))
+
+
 def create_virtualenv(virtualenv_path, project_user):
-    """ Creates virtual environment for instance and installs packages. """
+    """ SUDO - Creates virtual environment for instance and installs packages. """
 
     run('virtualenv %s --no-site-packages' % virtualenv_path)
 
@@ -45,22 +50,22 @@ def pip_install_requirements(virtualenv_path, source_path, cache_path):
     run('pip install -E %s -r %s --download-cache=%s --use-mirrors --quiet' % args)
 
 
-def get_current_instance_stamp(current_instance_path):
-    """ Reads symlinked current_instance and returns its sliced off stamp (git commit SHA1)  """
+def get_instance_stamp(instance_path):
+    """ Reads symlinked (current/previous) instance and returns its sliced off stamp (git commit SHA1)  """
 
-    return run('readlink -f %s' % current_instance_path).strip()[-40:]
+    return run('readlink -f %s' % instance_path).strip()[-40:]
 
 
 def set_current_instance(project_path, instance_path):
-    """ Set current instance to previous and new to current """
+    """ Delete previous, set current to previous and new to current """
 
     with cd(project_path):
-        run('rm -rf ./previous_instance')
+        delete_folder('./previous_instance')
 
         if exists('./current_instance'):
-            run('mv ./current_instance ./previous_instance')
+            rename('./current_instance', './previous_instance')
 
-        run('ln -sf %s ./current_instance' % instance_path)
+        create_symbolic_link(instance_path, './current_instance')
 
 
 def rollback(project_path):
@@ -68,5 +73,5 @@ def rollback(project_path):
 
     with cd(project_path):
         if exists('./previous_instance'):
-            run('rm -rf ./current_instance')
-            run('mv ./previous_instance ./current_instance')
+            delete_folder('./current_instance')
+            rename('./previous_instance', './current_instance')
