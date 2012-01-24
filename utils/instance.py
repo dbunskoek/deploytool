@@ -36,7 +36,7 @@ def create_virtualenv(virtualenv_path, project_user):
 
 def pip_install_requirements(virtualenv_path, source_path, cache_path):
     """ Requires availability of Pip (0.8.1 or later) on remote system """
-    import pdb; pdb.set_trace()
+
     requirements_file = os.path.join(source_path, 'requirements.txt')
 
     if not exists(requirements_file) or not exists(virtualenv_path):
