@@ -3,19 +3,6 @@ from fabric.api import *
 from fabric.colors import *
 from fabric.contrib.files import *
 
-import utils
-
-
-def create_stamp():
-    """ Creates datetime stamp for git tags and sqldumps (e.g. 1110191605) """
-
-    instance = datetime.datetime.today().strftime('%y%m%d%H%M')
-
-    if int(instance) in utils.source.list_tags():
-        abort(red('Datetime-stamp already exist. Task aborted.'))
-
-    return instance
-
 
 def create_folder(path):
 
@@ -40,15 +27,16 @@ def copy(from_path, to_path):
     run('cp %s %s' % (from_path, to_path))
 
 
-def create_virtualenv(virtualenv_path):
-    """ Creates virtual environment for instance and installs packages. """
+def create_virtualenv(virtualenv_path, project_user):
+    """ SUDO - Creates virtual environment for instance and installs packages. """
 
     run('virtualenv %s --no-site-packages' % virtualenv_path)
+    # sudo('chown -r %s:%s %s' % (project_user, project_user, virtualenv_path))
 
 
 def pip_install_requirements(virtualenv_path, source_path, cache_path):
     """ Requires availability of Pip (0.8.1 or later) on remote system """
-
+    import pdb; pdb.set_trace()
     requirements_file = os.path.join(source_path, 'requirements.txt')
 
     if not exists(requirements_file) or not exists(virtualenv_path):
@@ -59,9 +47,10 @@ def pip_install_requirements(virtualenv_path, source_path, cache_path):
 
 
 def get_current_instance_stamp(current_instance_path):
-    """ Reads symlinked current_instance and returns its sliced off stamp (e.g. 1201131600)  """
+    """ Reads symlinked current_instance and returns its sliced off stamp (git commit SHA1)  """
 
-    return run('readlink -f %s' % current_instance_path).strip()[-10:]
+    return run('readlink -f %s' % current_instance_path).strip()[-40:]
+
 
 def set_current(project_path, instance_path):
     """ Set current instance to previous and new to current """

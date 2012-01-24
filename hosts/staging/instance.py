@@ -3,16 +3,19 @@ from fabric.colors import *
 from fabric.contrib.files import exists
 import os
 
-import utils
+import deployment.utils as utils
 
 
 class StagingInstance(object):
     """ Helpers for creating a project-instance on staging-environment """
 
     def __init__(self, *args, **kwargs):
-        """ Timestamp (i.e. 1201121500) is used for folder-name and VCS-tag """
+        """ Set instance stamp to HEAD """
 
-        self.stamp = utils.instance.create_stamp()
+        if utils.source.get_branch_name() != 'master':
+            raise SystemExit(red('Deploy only possible on branch master.'))
+    
+        self.stamp = utils.source.get_head()
 
     def deploy(self):
         """ Creates project-instance from fabric-environment """
@@ -38,17 +41,9 @@ class StagingInstance(object):
             utils.instance.create_folder(folder) 
 
     def deploy_source(self):
-        """ Tag VCS, and transfer source from VCS to staging """
-
-        print(green('\nTagging source code in git.'))
-        utils.source.create_tag(self.stamp)
 
         print(green('\nFetching and deploying source code.'))
-        utils.source.transfer_source(
-            download_url = env.project_vcs_wget,
-            upload_path = env.source_path,
-            tag = self.stamp
-        )
+        utils.source.transfer_source(upload_path=env.source_path)
 
     def copy_settings_file(self):
         """ Copy django settings from project to instance """
@@ -77,7 +72,7 @@ class StagingInstance(object):
     def create_virtualenv(self):
 
         print(green('\nCreating virtual environment.'))
-        utils.instance.create_virtualenv(env.virtualenv_path)
+        utils.instance.create_virtualenv(env.virtualenv_path, env.user)
 
         print(green('\nPip installing requirements.'))
         utils.instance.pip_install_requirements(
@@ -91,9 +86,6 @@ class StagingInstance(object):
 
         print(green('\nRemoving instance from filesystem.'))
         utils.instance.delete_folder(env.instance_path)
-
-        print(green('\nRemoving tag from git.'))
-        utils.source.delete_tag(self.stamp)
 
     def update_database(self, migrate=False, backup=True):
 

@@ -1,7 +1,7 @@
 from fabric.colors import *
 from fabric.tasks import Task
 
-from hosts.staging.host import StagingHost
+from deployment.hosts.staging.host import StagingHost
 
 
 class StagingTask(Task):
@@ -23,19 +23,21 @@ class Deployment(StagingTask):
 
         try:
             self.host.instance.deploy()
+
+            try:
+                self.host.instance.update_database()
+
+            except SystemExit, e:
+                print(red('Update database failed. Rolling back deployment ...'))
+                self.host.instance.restore_database()
+                self.host.instance.delete()
+
+            self.host.instance.set_current()
+            self.host.reload()
+
         except SystemExit, e:
             print(red('Create instance failed. Rolling back deployment ...'))
             self.host.instance.delete()
-
-        try:
-            self.host.instance.update_database()
-        except SystemExit, e:
-            print(red('Update database failed. Rolling back deployment ...'))
-            self.host.instance.restore_database()
-            self.host.instance.delete()
-
-        self.host.instance.set_current()
-        self.host.reload()
 
 
 class Rollback(StagingTask):
@@ -52,7 +54,6 @@ class Rollback(StagingTask):
             self.host.instance.rollback()
             self.host.reload()
             self.host.instance.delete()
+
         except SystemExit, e:
             print(red('Rollback failed: %s ' % e.message))
-
-

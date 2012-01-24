@@ -1,7 +1,7 @@
 import os
 
-from hosts.host import Host
-from hosts.staging.instance import StagingInstance
+from deployment.hosts.host import Host
+from instance import StagingInstance
 
 
 class StagingHost(Host):
@@ -19,7 +19,7 @@ class StagingHost(Host):
         project_path = os.path.join(project_root, project_name)
 
         return {
-            'cache_path': os.path.join(project_root, 'python_egg_cache'),
+            'cache_path': os.path.join(project_path, 'cache'),
             'current_instance_path': os.path.join(project_path, 'current_instance'),
             'database_name': project_name,
             'hosts': self.settings['host_staging'],

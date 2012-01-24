@@ -1,19 +1,21 @@
-from fabric.api import run
+from fabric.api import run, cd
 from fabric.contrib.files import local, put
 import os
 
-from utils.commands import subprocess_popen
+from commands import subprocess_popen
 
 
-def transfer_source(download_url, upload_path, tag='master', tar_file='source.tar.gz'):
-    """ Download source tarball from VCS and upload/extract to/on remote server """
+def transfer_source(upload_path):
+    """ Archive source and upload/extract to/on remote server """
 
-    local('wget %s%s -O ./%s' % (download_url, tag, tar_file))
+    tar_file = 'source.tar'
+    local('git archive --format=tar --output=%s master' % tar_file)
     uploaded_files = put(tar_file, upload_path)
 
     if uploaded_files.succeeded:
-        run('tar -zxf %s --strip=1 -C %s' % (uploaded_files[0], upload_path))
-        run('rm -f %s' % os.path.join(upload_path, tar_file))
+        with cd(upload_path):
+            run('tar -xf %s' % uploaded_files[0])
+            run('rm -f ./%s' % tar_file)
         local('rm -f ./%s' % tar_file)
 
 
@@ -40,3 +42,21 @@ def list_tags():
     tags.reverse()
 
     return tags
+
+
+def list_commits(amount=10):
+    """ Pipe git commit log to list """
+
+    output = subprocess_popen(['git log master -n %d --pretty=format:%%H' % amount])
+    return [c.strip() for c in output.split('\n') if c != '']
+
+
+def get_branch_name():
+
+    return subprocess_popen('git rev-parse --abbrev-ref HEAD').strip()
+
+
+def get_head():
+
+    return subprocess_popen('git rev-parse HEAD').strip()
+
