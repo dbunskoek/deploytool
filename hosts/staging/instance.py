@@ -7,7 +7,18 @@ import deployment.utils as utils
 
 
 class StagingInstance(object):
-    """ Helpers for creating a project-instance on staging-environment """
+    """
+    Instance for this project on StagingHost
+    ========================================
+
+    Example instance structure on staging server:
+
+        /var/www/vhosts/s-PROJECTNAME/07aeb1319f4fbb2458028035c4c25a3044015be6/
+            backup/
+            env/
+            media/          =>  /var/www/vhosts/s-PROJECTNAME/media
+            PROJECTNAME/
+    """
 
     def __init__(self, *args, **kwargs):
         """ Set instance stamp to HEAD """
