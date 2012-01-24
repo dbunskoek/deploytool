@@ -75,6 +75,7 @@ class StagingHost(Host):
             source_path         Folder containing source code from Version Control System
             virtualenv_path     Virtualenv folder for this specific instance
         """
+
         instance_path = os.path.join(self.settings['project_path'], self.instance.stamp)
 
         return {

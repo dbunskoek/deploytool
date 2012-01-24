@@ -42,7 +42,7 @@ def pip_install_requirements(virtualenv_path, source_path, cache_path):
         abort(red('Could not install packages. Virtual environment or requirements.txt not found.'))
 
     args = (virtualenv_path, requirements_file, cache_path)
-    run('pip install -E %s -r %s --download-cache=%s --use-mirrors' % args)
+    run('pip install -E %s -r %s --download-cache=%s --use-mirrors --quiet' % args)
 
 
 def get_current_instance_stamp(current_instance_path):
@@ -51,7 +51,7 @@ def get_current_instance_stamp(current_instance_path):
     return run('readlink -f %s' % current_instance_path).strip()[-40:]
 
 
-def set_current(project_path, instance_path):
+def set_current_instance(project_path, instance_path):
     """ Set current instance to previous and new to current """
 
     with cd(project_path):
