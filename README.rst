@@ -18,8 +18,35 @@ Local dependencies:
 
 Remote setup:
 =============
+NOTE: This setup is still a work in progress!
 
-* TODO
+::
+
+    # connect to server (install remote requirements if needed!)
+    $ ssh LOCALUSER@REMOTESERVER
+
+    # add and swith to project user
+    $ sudo adduser PROJECTUSER
+    $ su PROJECTUSER
+
+    # create/copy files and folders for project
+    $ cd /var/www/vhost
+    $ mkdir PROJECTNAME
+    $ cd PROJECTNAME
+    $ mkdir PROJECTNAME/cache
+    $ mkdir PROJECTNAME/log
+    $ mkdir PROJECTNAME/media
+    $ mkdir PROJECTNAME/scripts
+    "copy assets/scripts to scripts" (TODO command)
+
+    # configuration (see assets for examples)
+    $ vim PROJECTNAME/scripts/credentials.py
+    $ vim PROJECTNAME/settings.py
+    $ vim PROJECTNAME/django.wsgi
+    $ vim /etc/nginx/sites-available/PROJECTNAME
+    $ vim /etc/apache/sites-available/PROJECTNAME
+
+    ... (TODO)
 
 Local setup:
 ============
