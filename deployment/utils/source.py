@@ -1,5 +1,6 @@
-from fabric.api import run, cd
-from fabric.contrib.files import local, put
+from fabric.api import *
+from fabric.colors import *
+from fabric.contrib.files import *
 import os
 
 from commands import subprocess_popen

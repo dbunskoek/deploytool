@@ -40,7 +40,7 @@ def set_current_instance(project_path, instance_path):
         if exists('./current_instance'):
             commands.rename('./current_instance', './previous_instance')
 
-        create_symbolic_link(instance_path, './current_instance')
+        commands.create_symbolic_link(instance_path, './current_instance')
 
 
 def rollback(project_path):

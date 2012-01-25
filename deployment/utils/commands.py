@@ -1,4 +1,6 @@
-from fabric.api import run
+from fabric.api import *
+from fabric.colors import *
+from fabric.contrib.files import *
 import os
 import subprocess
 
