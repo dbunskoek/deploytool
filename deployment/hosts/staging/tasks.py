@@ -3,7 +3,6 @@ from fabric.colors import *
 from fabric.tasks import Task
 
 from deployment.hosts.staging.host import StagingHost
-import deployment.utils as utils
 
 
 class StagingTask(Task):
@@ -44,17 +43,15 @@ class Deployment(StagingTask):
 
         print(yellow('\nStart task - deploy to staging'))
 
-        # check for params and load instance
-        branch = kwargs.get('branch', 'master')
-        commit = kwargs.get('commit', None)
+        # check for params
         instance = self.host.instance
+        stamp = instance.create_stamp(
+            branch = kwargs.get('branch', 'master'),
+            commit = kwargs.get('commit', None)
+        )
 
-        if not commit is None:
-            self.host.load_instance(stamp=commit)
-        else:
-            self.host.load_instance(stamp=utils.source.get_commit_id(branch))
-
-        # check if all is well for deployment
+        # load instance and check if all is well for deployment
+        self.host.load_instance(stamp=stamp)
         instance.check_deploy()
 
         # deploy source

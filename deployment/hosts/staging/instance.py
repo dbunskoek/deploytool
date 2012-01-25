@@ -28,6 +28,17 @@ class StagingInstance(object):
 
         self.stamp = utils.source.get_head()
 
+    def create_stamp(self, branch, commit):
+        """ Create identifier for instance based on git IDs """
+
+        if not commit is None:
+            return commit
+
+        if not branch is None:
+            return utils.source.get_commit_id(branch)
+
+        return utils.source.get_head()
+
     def check_deploy(self):
         """ Check deployment requirements and aborts task if not ok. """
 
