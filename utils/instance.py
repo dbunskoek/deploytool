@@ -3,33 +3,7 @@ from fabric.api import *
 from fabric.colors import *
 from fabric.contrib.files import *
 
-
-def create_folder(path):
-
-    if exists(path):
-        abort(red('Path `%s` already exists.' % path))
-    else:
-        run('mkdir %s' % path)
-
-
-def delete_folder(path):
-
-    run('rm -rf %s' % path)
-
-
-def create_symbolic_link(real_path, symbolic_path):
-
-    run('ln -sf %s %s' % (real_path, symbolic_path))
-
-
-def copy(from_path, to_path):
-
-    run('cp %s %s' % (from_path, to_path))
-
-
-def rename(old_path, new_path):
-
-    run('mv %s %s' % (old_path, new_path))
+import commands
 
 
 def create_virtualenv(virtualenv_path, project_user):
@@ -61,10 +35,10 @@ def set_current_instance(project_path, instance_path):
     """ Delete previous, set current to previous and new to current """
 
     with cd(project_path):
-        delete_folder('./previous_instance')
+        commands.delete_folder('./previous_instance')
 
         if exists('./current_instance'):
-            rename('./current_instance', './previous_instance')
+            commands.rename('./current_instance', './previous_instance')
 
         create_symbolic_link(instance_path, './current_instance')
 
@@ -74,5 +48,5 @@ def rollback(project_path):
 
     with cd(project_path):
         if exists('./previous_instance'):
-            delete_folder('./current_instance')
-            rename('./previous_instance', './current_instance')
+            commands.delete_folder('./current_instance')
+            commands.rename('./previous_instance', './current_instance')

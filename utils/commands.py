@@ -3,6 +3,34 @@ import os
 import subprocess
 
 
+def create_folder(path):
+
+    if exists(path):
+        abort(red('Path `%s` already exists.' % path))
+    else:
+        run('mkdir %s' % path)
+
+
+def delete_folder(path):
+
+    run('rm -rf %s' % path)
+
+
+def create_symbolic_link(real_path, symbolic_path):
+
+    run('ln -sf %s %s' % (real_path, symbolic_path))
+
+
+def copy(from_path, to_path):
+
+    run('cp %s %s' % (from_path, to_path))
+
+
+def rename(old_path, new_path):
+
+    run('mv %s %s' % (old_path, new_path))
+
+
 def touch_wsgi(project_path):
     """ Touch WSGI to restart website """
 

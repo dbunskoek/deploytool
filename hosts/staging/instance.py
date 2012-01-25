@@ -57,7 +57,7 @@ class StagingInstance(object):
         ]
 
         for folder in folders_to_create:
-            utils.instance.create_folder(folder) 
+            utils.commands.create_folder(folder) 
 
     def deploy_source(self):
 
@@ -68,7 +68,7 @@ class StagingInstance(object):
         """ Copy django settings from project to instance """
 
         print(green('\nCopying settings.'))
-        utils.instance.copy(
+        utils.commands.copy(
             from_path = os.path.join(env.project_path, 'settings.py'),
             to_path = os.path.join(env.source_path, 'settings.py')
         )
@@ -77,7 +77,7 @@ class StagingInstance(object):
         """ Link instance media folder to project media folder """
 
         print(green('\nLinking media folder.'))
-        utils.instance.create_symbolic_link(
+        utils.commands.create_symbolic_link(
             real_path = os.path.join(env.project_path, 'media'),
             symbolic_path = os.path.join(env.instance_path, 'media')
         )
@@ -105,7 +105,7 @@ class StagingInstance(object):
         """ Delete instance from filesystem """
 
         print(green('\nRemoving instance from filesystem.'))
-        utils.instance.delete_folder(env.instance_path)
+        utils.commands.delete_folder(env.instance_path)
 
     def update_database(self, migrate=False, backup=True):
 

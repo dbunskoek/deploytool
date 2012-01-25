@@ -37,7 +37,7 @@ class Deployment(StagingTask):
 
         print(yellow('\nStart task - deploy to staging'))
 
-        # check requirements
+        # init & check requirements
         instance = self.host.instance
         instance.check_deploy()
 
@@ -50,6 +50,7 @@ class Deployment(StagingTask):
             instance.link_media_folder()
             instance.collect_static_files()
         except:
+            instance.log(self.name, success=False)
             instance.delete()
             abort(red('Deploy failed and was rolled back.'))
         
@@ -57,6 +58,7 @@ class Deployment(StagingTask):
         try:
             instance.update_database()
         except:
+            instance.log(self.name, success=False)
             instance.restore_database()
             instance.delete()
             abort(red('Deploy failed and was rolled back.'))
@@ -84,6 +86,8 @@ class Rollback(StagingTask):
             self.host.instance.rollback()
             self.host.reload()
             self.host.instance.delete()
+            self.host.instance.log(self.name)
 
         except Exception, e:
+            self.host.instance.log(self.name, success=False)
             abort(red('Rollback failed: %s ' % e.message))
