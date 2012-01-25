@@ -33,21 +33,22 @@ def rename(old_path, new_path):
 
 
 def create_virtualenv(virtualenv_path, project_user):
-    """ SUDO - Creates virtual environment for instance and installs packages. """
+    """ Creates virtual environment for instance and installs packages. """
 
     run('virtualenv %s --no-site-packages' % virtualenv_path)
 
 
-def pip_install_requirements(virtualenv_path, source_path, cache_path):
+def pip_install_requirements(virtualenv_path, source_path, cache_path, log_path):
     """ Requires availability of Pip (0.8.1 or later) on remote system """
 
     requirements_file = os.path.join(source_path, 'requirements.txt')
+    log_file = os.path.join(log_path, 'pip.log')
 
     if not exists(requirements_file) or not exists(virtualenv_path):
         abort(red('Could not install packages. Virtual environment or requirements.txt not found.'))
 
-    args = (virtualenv_path, requirements_file, cache_path)
-    run('pip install -E %s -r %s --download-cache=%s --use-mirrors --quiet' % args)
+    args = (virtualenv_path, requirements_file, cache_path, log_file)
+    run('pip install -E %s -r %s --download-cache=%s --use-mirrors --quiet --log=%s' % args)
 
 
 def get_instance_stamp(instance_path):

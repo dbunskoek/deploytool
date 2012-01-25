@@ -1,7 +1,8 @@
 from fabric.api import env, settings, hide, abort
 from fabric.colors import *
-from fabric.contrib.files import exists
+from fabric.contrib.files import exists, append
 import os
+import datetime
 
 import deployment.utils as utils
 
@@ -34,7 +35,7 @@ class StagingInstance(object):
         previous_instance_stamp = utils.instance.get_instance_stamp(env.previous_instance_path)
 
         if utils.source.get_branch_name() != 'master':
-            abort(red('Deploy only possible on branch master.'))
+            abort(red('Deploy currently only possible on branch master.'))
 
         if self.stamp == current_instance_stamp:
             abort(red('Deploy aborted because HEAD is already the current instance.'))
@@ -96,11 +97,12 @@ class StagingInstance(object):
         utils.instance.pip_install_requirements(
             env.virtualenv_path,
             env.source_path,
-            env.cache_path
+            env.cache_path,
+            env.log_path
         )
 
     def delete(self):
-        """ Delete instance from filesystem and remove tag from git """
+        """ Delete instance from filesystem """
 
         print(green('\nRemoving instance from filesystem.'))
         utils.instance.delete_folder(env.instance_path)
@@ -152,15 +154,28 @@ class StagingInstance(object):
         if not exists(backup_file):
             abort(red('Could not find backupfile to restore database with.'))
 
-
     def rollback(self):
         """ Removes current instance and rolls back to previous (if any). """
 
-        # restore database to the start-state of the (to be removed) current instance
         print(green('\nRestoring database to start of this instance.'))
         self.restore_database()
 
-        # remove current instance and set previous to current
         print(green('\nRemoving this instance and set previous to current.'))
         utils.instance.rollback(env.project_path)
 
+    def log(self, task_name, success=True):
+
+        if success:
+            result = 'SUCCESS'
+        else:
+            result = 'FAILED'
+
+        message = '[%s] %s %s in STAGING by %s for %s' % (
+            datetime.datetime.today().strftime('%Y-%m-%d %H:%M'),
+            task_name.upper(),
+            result,
+            env.local_user.upper(),
+            self.stamp
+        )
+
+        append(os.path.join(env.log_path, 'fabric.log'), message)

@@ -1,4 +1,4 @@
-from fabric.api import hide, settings
+from fabric.api import hide, settings, abort
 from fabric.colors import *
 from fabric.tasks import Task
 
@@ -64,6 +64,8 @@ class Deployment(StagingTask):
         # notify webserver
         instance.set_current()
         self.host.reload()
+
+        instance.log(self.name)
 
 
 class Rollback(StagingTask):
