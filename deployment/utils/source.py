@@ -6,11 +6,15 @@ import os
 from commands import subprocess_popen
 
 
-def transfer_source(upload_path):
-    """ Archive source and upload/extract to/on remote server """
+def transfer_source(upload_path, tree):
+    """
+    Archive source and upload/extract to/on remote server
+        upload_path =>  target location to extract on remote
+        tree        =>  git ID for branch, commit or tag
+    """
 
     tar_file = 'source.tar'
-    local('git archive --format=tar --output=%s master' % tar_file)
+    local('git archive --format=tar --output=%s %s' % (tar_file, tree))
     uploaded_files = put(tar_file, upload_path)
 
     if uploaded_files.succeeded:
@@ -45,10 +49,10 @@ def list_tags():
     return tags
 
 
-def list_commits(amount=10):
+def list_commits(amount=10, branch='master'):
     """ Pipe git commit log to list """
 
-    output = subprocess_popen(['git log master -n %d --pretty=format:%%H' % amount])
+    output = subprocess_popen(['git log %s -n %d --pretty=format:%%H' % (branch, amount)])
     return [c.strip() for c in output.split('\n') if c != '']
 
 
@@ -57,7 +61,11 @@ def get_branch_name():
     return subprocess_popen('git rev-parse --abbrev-ref HEAD').strip()
 
 
+def get_commit_id(tree):
+
+    return subprocess_popen('git rev-parse %s' % tree).strip()
+
 def get_head():
 
-    return subprocess_popen('git rev-parse HEAD').strip()
+    return get_commit_id('HEAD')
 

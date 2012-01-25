@@ -34,17 +34,15 @@ class StagingInstance(object):
         current_instance_stamp = utils.instance.get_instance_stamp(env.current_instance_path)
         previous_instance_stamp = utils.instance.get_instance_stamp(env.previous_instance_path)
 
-        if utils.source.get_branch_name() != 'master':
-            abort(red('Deploy currently only possible on branch master.'))
-
         if self.stamp == current_instance_stamp:
-            abort(red('Deploy aborted because HEAD is already the current instance.'))
+            abort(red('Deploy aborted because %s is already the current instance.' % self.stamp))
 
         if self.stamp == previous_instance_stamp:
-            abort(red('Deploy aborted because HEAD is the previous instance. Use rollback task instead.'))
+            abort(red('Deploy aborted because %s is the previous instance. Use rollback task instead.' % self.stamp))
 
         if exists(env.instance_path):
-            abort(red('Deploy aborted because this instance has already been deployed.'))
+            # TODO: ask for overwrite?
+            abort(red('Deploy aborted because instance %s has already been deployed.' % self.stamp))
 
     def create_folders(self):
 
@@ -60,9 +58,10 @@ class StagingInstance(object):
             utils.commands.create_folder(folder) 
 
     def deploy_source(self):
+        """ Deploy by branch of commit_id (defaults to master/HEAD) """
 
-        print(green('\nDeploying source.'))
-        utils.source.transfer_source(upload_path=env.source_path)
+        print(green('\nDeploying source for %s.' % self.stamp))
+        utils.source.transfer_source(upload_path=env.source_path, tree=self.stamp)
 
     def copy_settings_file(self):
         """ Copy django settings from project to instance """
@@ -104,7 +103,7 @@ class StagingInstance(object):
     def delete(self):
         """ Delete instance from filesystem """
 
-        print(green('\nRemoving instance from filesystem.'))
+        print(green('\nRemoving instance from filesystem for %s.' % self.stamp))
         utils.commands.delete_folder(env.instance_path)
 
     def update_database(self, migrate=False, backup=True):

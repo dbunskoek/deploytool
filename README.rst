@@ -18,7 +18,7 @@ Local dependencies:
 
 Remote setup:
 =============
-NOTE: This setup is still a work in progress!
+NOTE: This section is still WIP.
 
 ::
 
@@ -50,10 +50,23 @@ NOTE: This setup is still a work in progress!
 
 Local setup:
 ============
+NOTE: This section is still WIP.
 
 * TODO
 
 Usage:
 ======
+NOTE: This section is still WIP.
 
-* TODO
+::
+
+    # list all available tasks
+    $ fab --list
+
+    # show detailed information for task
+    $ fab -d TASKNAME
+
+    # execute task with parameters
+    $ fab TASKNAME:ARG=VALUE
+
+...

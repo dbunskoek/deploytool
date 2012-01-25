@@ -3,6 +3,7 @@ from fabric.colors import *
 from fabric.tasks import Task
 
 from deployment.hosts.staging.host import StagingHost
+import deployment.utils as utils
 
 
 class StagingTask(Task):
@@ -20,7 +21,7 @@ class StagingTask(Task):
         """ Execute task (quietly by default) """
 
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-            self()
+            self(*args, **kwargs)
 
     def __call__(self):
         """ Task implementation """
@@ -29,16 +30,31 @@ class StagingTask(Task):
 
 
 class Deployment(StagingTask):
-    """ Deploys latest source as new instance """
+    """
+    Deploy new instance to staging
+
+        fab staging.deploy
+        fab staging.deploy:branch=my-branch
+        fab staging.deploy:commit=1ec9d293ce54647df7f15ee7c0295b8eb2a5cbef
+    """
 
     name = 'deploy'
 
-    def __call__(self):
+    def __call__(self, *args, **kwargs):
 
         print(yellow('\nStart task - deploy to staging'))
 
-        # init & check requirements
+        # check for params and load instance
+        branch = kwargs.get('branch', 'master')
+        commit = kwargs.get('commit', None)
         instance = self.host.instance
+
+        if not commit is None:
+            self.host.load_instance(stamp=commit)
+        else:
+            self.host.load_instance(stamp=utils.source.get_commit_id(branch))
+
+        # check if all is well for deployment
         instance.check_deploy()
 
         # deploy source
@@ -53,7 +69,7 @@ class Deployment(StagingTask):
             instance.log(self.name, success=False)
             instance.delete()
             abort(red('Deploy failed and was rolled back.'))
-        
+
         # update database
         try:
             instance.update_database()
@@ -62,7 +78,7 @@ class Deployment(StagingTask):
             instance.restore_database()
             instance.delete()
             abort(red('Deploy failed and was rolled back.'))
-        
+
         # notify webserver
         instance.set_current()
         self.host.reload()
@@ -81,7 +97,7 @@ class Rollback(StagingTask):
 
         self.host.load_current_instance()
         self.host.instance.check_rollback()
-        
+
         try:
             self.host.instance.rollback()
             self.host.reload()
