@@ -48,6 +48,20 @@ class RemoteHost(object):
         print(green('\nRestarting website.'))
         utils.commands.touch_wsgi(env.project_path)
 
+    def show_status(self):
+
+        current_instance = utils.commands.read_link(env.current_instance_path)
+        previous_instance = utils.commands.read_link(env.previous_instance_path)
+        fabric_log_file = os.path.join(env.log_path, 'fabric.log')
+        fabric_log_dump = utils.commands.tail_file(fabric_log_file)
+
+        print(green('\nCurrent instance:'))
+        print(current_instance)
+        print(green('\nPrevious instance:'))
+        print(previous_instance)
+        print(green('\nFabric log:'))
+        print(fabric_log_dump)
+
     def get_settings_for_host(self):
         """
         Available settings for Host

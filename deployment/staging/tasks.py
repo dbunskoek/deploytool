@@ -80,3 +80,15 @@ class Rollback(RemoteTask):
         except Exception, e:
             self.host.instance.log(self.name, success=False)
             abort(red('Rollback failed: %s ' % e.message))
+
+
+class Status(RemoteTask):
+    """ Shows current and previous instances """
+
+    name = 'status'
+
+    def __call__(self):
+
+        print(yellow('\nStatus information for staging environment:\n'))
+        self.host.show_status()
+

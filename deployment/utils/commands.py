@@ -5,6 +5,17 @@ import os
 import subprocess
 
 
+def tail_file(file_path, lines=5):
+
+    return run('tail --lines=5 %s' % file_path)
+
+
+def read_link(path):
+    """ Returns real path for symbolic link """
+
+    return run('readlink -f %s' % path).strip()
+
+
 def create_folder(path):
 
     if exists(path):

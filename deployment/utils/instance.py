@@ -28,7 +28,7 @@ def pip_install_requirements(virtualenv_path, source_path, cache_path, log_path)
 def get_instance_stamp(instance_path):
     """ Reads symlinked (current/previous) instance and returns its sliced off stamp (git commit SHA1)  """
 
-    return run('readlink -f %s' % instance_path).strip()[-40:]
+    return commands.read_link(instance_path)[-40:]
 
 
 def set_current_instance(project_path, instance_path):
