@@ -63,9 +63,24 @@ class RemoteHost(object):
         print(fabric_log_dump)
 
     def download_media(self):
+        """ Download tarball from remote project media files """
 
-        # TODO
-        raise NotImplementedError
+        file_name = 'project_media.tar'
+        cwd = os.getcwd()
+
+        utils.commands.create_tarball(
+            project_path = env.project_path,
+            target = 'media',
+            file_name = file_name
+        )
+
+        utils.commands.download_file(
+            remote_path = os.path.join(env.project_path, file_name),
+            local_path = os.path.join(cwd, file_name)
+        )
+
+        print(green('\nDownloaded media to:'))
+        print(os.path.join(cwd, file_name))
 
     def download_database(self):
         """ Export database for current instance and download """
@@ -73,10 +88,9 @@ class RemoteHost(object):
         backup_file = self.instance.backup_database()
         local_file = os.path.join(os.getcwd(), os.path.basename(backup_file))
 
-        utils.commands.download(
+        utils.commands.download_file(
             remote_path = backup_file,
-            local_path = local_file,
-            delete_remote = True
+            local_path = local_file
         )
 
         print(green('\nDownloaded backup to:'))
@@ -111,6 +125,7 @@ class RemoteHost(object):
             'environment': self.settings['environment'],
             'hosts': self.settings['hosts'],
             'log_path': os.path.join(project_path, 'log'),
+            'media_path': os.path.join(project_path, 'media'),
             'previous_instance_path': os.path.join(project_path, 'previous_instance'),
             'project_root': projects_root,
             'project_path': project_path,

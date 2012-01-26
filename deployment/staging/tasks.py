@@ -95,10 +95,11 @@ class Media(RemoteTask):
     """ Download media files as archive from staging """
 
     name = 'media'
-    text = 'Fetch media from staging'
+    text = 'Fetch media tarball from staging'
 
     def __call__(self):
 
+        self.host.load_current_instance()
         self.host.download_media()
 
 

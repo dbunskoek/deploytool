@@ -5,7 +5,13 @@ import os
 import subprocess
 
 
-def download(remote_path, local_path, delete_remote=True):
+def create_tarball(project_path, target, file_name='archive.tar'):
+
+    with cd(project_path):
+        run('tar -cf ./%s ./%s' % (file_name, target))
+
+
+def download_file(remote_path, local_path, delete_remote=True):
 
     get(remote_path, local_path)
 
