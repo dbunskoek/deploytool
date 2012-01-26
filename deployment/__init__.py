@@ -1,6 +1,7 @@
 # package base classes
 import deployment.hosts
 import deployment.instances
+import deployment.tasks
 
 # package environments
 import deployment.live

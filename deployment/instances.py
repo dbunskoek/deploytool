@@ -1,7 +1,7 @@
 import datetime
-from fabric.api import *
+from fabric.api import abort, env
 from fabric.colors import *
-from fabric.contrib.files import *
+from fabric.contrib.files import append, exists
 import os
 
 import deployment.utils as utils
