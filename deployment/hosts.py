@@ -62,6 +62,24 @@ class RemoteHost(object):
         print(green('\nFabric log:'))
         print(fabric_log_dump)
 
+    def download_media(self):
+
+        # TODO
+        raise NotImplementedError
+
+    def download_database(self):
+        """ Export database for current instance and download """
+
+        backup_file = self.instance.backup_database()
+        local_file = os.path.join(os.getcwd(), os.path.basename(backup_file))
+
+        print(str.join(' ', [green('\nDownloaded backup to: '), yellow(local_file)] ))
+        utils.commands.download(
+            remote_path = backup_file,
+            local_path = local_file,
+            delete_remote = True
+        )
+
     def get_settings_for_host(self):
         """
         Available settings for Host
@@ -123,14 +141,13 @@ class RemoteHost(object):
     def load_current_instance(self):
         """ Configures settings for current(ly active) instance """
 
-        print(green('\nUpdating settings for current instance.'))
         current_stamp = utils.instance.get_instance_stamp(env.current_instance_path)
         self.load_instance(stamp=current_stamp)
 
     def load_instance(self, stamp):
         """ Configures settings for specified instance """
 
-        print(green('\nUpdating settings for instance %s.' % stamp))
+        print(green('\nLoading settings for instance %s.' % stamp))
         self.update_settings_for_instance(stamp=stamp)
 
     def update_settings_for_instance(self, stamp):

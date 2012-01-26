@@ -5,6 +5,14 @@ import os
 import subprocess
 
 
+def download(remote_path, local_path, delete_remote=True):
+
+    get(remote_path, local_path)
+
+    if delete_remote:
+        delete(remote_path)
+
+
 def tail_file(file_path, lines=5):
 
     return run('tail --lines=5 %s' % file_path)
@@ -24,7 +32,7 @@ def create_folder(path):
         run('mkdir %s' % path)
 
 
-def delete_folder(path):
+def delete(path):
 
     run('rm -rf %s' % path)
 

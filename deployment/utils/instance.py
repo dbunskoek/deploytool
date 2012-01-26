@@ -35,7 +35,7 @@ def set_current_instance(project_path, instance_path):
     """ Delete previous, set current to previous and new to current """
 
     with cd(project_path):
-        commands.delete_folder('./previous_instance')
+        commands.delete('./previous_instance')
 
         if exists('./current_instance'):
             commands.rename('./current_instance', './previous_instance')
@@ -48,5 +48,5 @@ def rollback(project_path):
 
     with cd(project_path):
         if exists('./previous_instance'):
-            commands.delete_folder('./current_instance')
+            commands.delete('./current_instance')
             commands.rename('./previous_instance', './current_instance')

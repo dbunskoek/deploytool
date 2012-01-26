@@ -14,10 +14,9 @@ class Deployment(RemoteTask):
     """
 
     name = 'deploy'
+    text = 'Deploy to staging'
 
     def __call__(self, *args, **kwargs):
-
-        print(yellow('\nStart task - deploy to staging'))
 
         # check for params
         instance = self.host.instance
@@ -63,10 +62,9 @@ class Rollback(RemoteTask):
     """ Rollback current instance to previous instance """
 
     name = 'rollback'
+    text = 'Rollback to previous instance'
 
     def __call__(self):
-
-        print(yellow('\nStart task - rollback to previous'))
 
         self.host.load_current_instance()
         self.host.instance.check_rollback()
@@ -83,12 +81,34 @@ class Rollback(RemoteTask):
 
 
 class Status(RemoteTask):
-    """ Shows current and previous instances """
+    """ Show status information for staging environment """
 
     name = 'status'
+    text = 'Status for staging'
 
     def __call__(self):
 
-        print(yellow('\nStatus information for staging environment:\n'))
         self.host.show_status()
 
+
+class Media(RemoteTask):
+    """ Download media files as archive from staging """
+
+    name = 'media'
+    text = 'Fetch media from staging'
+
+    def __call__(self):
+
+        self.host.download_media()
+
+
+class Database(RemoteTask):
+    """ Download database export from staging """
+
+    name = 'database'
+    text = 'Fetch database export from staging'
+
+    def __call__(self):
+
+        self.host.load_current_instance()
+        self.host.download_database()

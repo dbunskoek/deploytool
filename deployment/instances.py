@@ -52,7 +52,6 @@ class RemoteInstance(object):
             abort(red('Deploy aborted because %s is the previous instance. Use rollback task instead.' % self.stamp))
 
         if exists(env.instance_path):
-            # TODO: ask for overwrite?
             abort(red('Deploy aborted because instance %s has already been deployed.' % self.stamp))
 
     def create_folders(self):
@@ -115,7 +114,7 @@ class RemoteInstance(object):
         """ Delete instance from filesystem """
 
         print(green('\nRemoving instance from filesystem for %s.' % self.stamp))
-        utils.commands.delete_folder(env.instance_path)
+        utils.commands.delete(env.instance_path)
 
     def update_database(self, migrate=False, backup=True):
 
@@ -139,11 +138,11 @@ class RemoteInstance(object):
         backup_file = os.path.join(env.backup_path, 'db_backup%s.sql' % postfix)
         python_command = '%s/db_backup.py "%s"' % (env.scripts_path, backup_file)
         utils.commands.python_run(env.virtualenv_path, python_command)
+        return backup_file
 
     def restore_database(self):
 
         backup_file = os.path.join(env.backup_path, 'db_backup_start.sql')
-
         utils.commands.python_run(env.virtualenv_path, '%s/db_drop.py' % env.scripts_path)
         utils.commands.python_run(env.virtualenv_path, '%s/db_create.py' % env.scripts_path)
         utils.commands.sql_execute_file(env.virtualenv_path, env.scripts_path, backup_file)

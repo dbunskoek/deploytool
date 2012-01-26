@@ -1,4 +1,5 @@
 from fabric.api import settings, hide
+from fabric.colors import *
 from fabric.tasks import Task
 
 from deployment.hosts import RemoteHost
@@ -9,6 +10,7 @@ class RemoteTask(Task):
 
     host = None
     name = None
+    text = None
 
     def __init__(self, *args, **kwargs):
         """ Link task to host """
@@ -19,6 +21,7 @@ class RemoteTask(Task):
         """ Execute task (quietly by default) """
 
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+            print(magenta('\n%s\n' % self.text))
             self(*args, **kwargs)
 
     def __call__(self):
