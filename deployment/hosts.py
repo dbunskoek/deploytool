@@ -73,12 +73,14 @@ class RemoteHost(object):
         backup_file = self.instance.backup_database()
         local_file = os.path.join(os.getcwd(), os.path.basename(backup_file))
 
-        print(str.join(' ', [green('\nDownloaded backup to: '), yellow(local_file)] ))
         utils.commands.download(
             remote_path = backup_file,
             local_path = local_file,
             delete_remote = True
         )
+
+        print(green('\nDownloaded backup to:'))
+        print(local_file)
 
     def get_settings_for_host(self):
         """
@@ -147,8 +149,8 @@ class RemoteHost(object):
     def load_instance(self, stamp):
         """ Configures settings for specified instance """
 
-        print(green('\nLoading settings for instance %s.' % stamp))
         self.update_settings_for_instance(stamp=stamp)
+        print(yellow('\nInitialized for instance %s.\n' % stamp))
 
     def update_settings_for_instance(self, stamp):
 

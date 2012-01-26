@@ -70,7 +70,7 @@ class RemoteInstance(object):
     def deploy_source(self):
         """ Deploy by branch of commit_id (defaults to master/HEAD) """
 
-        print(green('\nDeploying source for %s.' % self.stamp))
+        print(green('\nDeploying source for this instance.'))
         utils.source.transfer_source(upload_path=env.source_path, tree=self.stamp)
 
     def copy_settings_file(self):
@@ -113,7 +113,7 @@ class RemoteInstance(object):
     def delete(self):
         """ Delete instance from filesystem """
 
-        print(green('\nRemoving instance from filesystem for %s.' % self.stamp))
+        print(green('\nRemoving this instance from filesystem.'))
         utils.commands.delete(env.instance_path)
 
     def update_database(self, migrate=False, backup=True):

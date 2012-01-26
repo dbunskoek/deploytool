@@ -21,8 +21,16 @@ class RemoteTask(Task):
         """ Execute task (quietly by default) """
 
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-            print(magenta('\n%s\n' % self.text))
+            print(magenta(self.pretty_text()))
             self(*args, **kwargs)
+
+    def pretty_text(self):
+        """ Returns boxed task-title from self.text """
+
+        title = '| TASK - %s |' % self.text
+        line = str.join('-', ['' for s in range(len(title)-1)])
+
+        return '\n+%s+\n%s\n+%s+\n' % (line, title, line)
 
     def __call__(self):
         """ Task implementation """
