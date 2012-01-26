@@ -2,7 +2,7 @@ from fabric.api import *
 from fabric.colors import *
 from fabric.tasks import Task
 
-from deployment.staging.host import StagingHost
+from deployment.hosts import RemoteHost
 
 
 class StagingTask(Task):
@@ -14,7 +14,7 @@ class StagingTask(Task):
     def __init__(self, *args, **kwargs):
         """ Link task to host """
 
-        self.host = StagingHost(project_settings=kwargs['project_settings'])
+        self.host = RemoteHost(project_settings=kwargs['project_settings'])
 
     def run(self, *args, **kwargs):
         """ Execute task (quietly by default) """

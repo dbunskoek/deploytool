@@ -1,6 +1,8 @@
 from fabric.api import env
 from fabric.colors import *
+import os
 
+from deployment.instances import RemoteInstance
 import deployment.utils as utils
 
 
@@ -15,14 +17,14 @@ class RemoteHost(object):
     Example project structure on staging server:
 
         /var/www/vhosts/
-            /s-PROJECTNAME/
+            /s-myprojectname/
                 07aeb1319f4fbb2458028035c4c25a3044015be6/
                 987e00fe968b891157794d9c9f488ff55c91cb9f/
                 cache/
-                current_instance/   => /var/www/vhosts/s-PROJECTNAME/07aeb1319f4fbb2458028035c4c25a3044015be6/
+                current_instance/   => /var/www/vhosts/s-myprojectname/07aeb1319f4fbb2458028035c4c25a3044015be6/
                 log/
                 media/
-                previous_instance/  => /var/www/vhosts/s-PROJECTNAME/987e00fe968b891157794d9c9f488ff55c91cb9f/
+                previous_instance/  => /var/www/vhosts/s-myprojectname/987e00fe968b891157794d9c9f488ff55c91cb9f/
                 scripts/
                 django.wsgi
                 settings.py
@@ -32,6 +34,8 @@ class RemoteHost(object):
     settings = {}
 
     def __init__(self, *args, **kwargs):
+
+        self.instance = RemoteInstance()
 
         self.settings.update(kwargs['project_settings'])
         self.settings.update(self.get_settings_for_host())
@@ -49,19 +53,36 @@ class RemoteHost(object):
         Available settings for Host
         ===========================
 
-            cache_path                  Python pip egg cache
+            cache_path                  Python pip egg cache path
             current_instance_path       Symlink to current instance
             database_name               Database name for project (same as project name)
+            environment                 Name for deploy-environment
             hosts                       List of available hostnames to connect to
             log_path                    Project log folder for Apache, Nginx, Pip, Fabric
             previous_instance_path      Symlink to previous instance
-            project_root                Root folder for all projects on server
+            projects_root               Root folder for all projects on server
             project_path                Root folder for this project
             scripts_path                Folder with helper mysql-scripts
             user                        Remote user for this project (same as project name)
         """
 
-        raise NotImplementedError
+        projects_root = self.settings['projects_root']
+        project_name = '%s%s' % (self.settings['project_name_prefix'], self.settings['project_name'])
+        project_path = os.path.join(projects_root, project_name)
+
+        return {
+            'cache_path': os.path.join(project_path, 'cache'),
+            'current_instance_path': os.path.join(project_path, 'current_instance'),
+            'database_name': project_name,
+            'environment': self.settings['environment'],
+            'hosts': self.settings['hosts'],
+            'log_path': os.path.join(project_path, 'log'),
+            'previous_instance_path': os.path.join(project_path, 'previous_instance'),
+            'project_root': projects_root,
+            'project_path': project_path,
+            'scripts_path': os.path.join(project_path, 'scripts'),
+            'user': project_name,
+        }
 
     def get_settings_for_instance(self):
         """
@@ -75,7 +96,15 @@ class RemoteHost(object):
             virtualenv_path     Virtualenv folder for this specific instance
         """
 
-        raise NotImplementedError
+        instance_path = os.path.join(self.settings['project_path'], self.instance.stamp)
+
+        return {
+            'backup_path': os.path.join(instance_path, 'backup'),
+            'instance_stamp': self.instance.stamp,
+            'instance_path': instance_path,
+            'source_path': os.path.join(instance_path, self.settings['project_name']),
+            'virtualenv_path': os.path.join(instance_path, 'env'),
+        }
 
     def load_current_instance(self):
         """ Configures settings for current(ly active) instance """
