@@ -1,8 +1,8 @@
-from fabric.api import hide, settings, abort
+from fabric.api import *
 from fabric.colors import *
 from fabric.tasks import Task
 
-from deployment.hosts.staging.host import StagingHost
+from deployment.staging.host import StagingHost
 
 
 class StagingTask(Task):

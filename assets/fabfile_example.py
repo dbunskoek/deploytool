@@ -1,9 +1,11 @@
-# Copy & rename to your project root as fabfile.py
+# Copy & rename this to your project root as fabfile.py
 
 import os
 
-# import tasks for hosts
-import deployment.hosts.staging.tasks as staging
+# import tasks
+import deployment.live.tasks as live
+import deployment.local.tasks as local
+import deployment.staging.tasks as staging
 
 
 # project settings

@@ -1,14 +1,14 @@
 import os
 
-from deployment.hosts.host import Host
-from instance import StagingInstance
+from deployment.hosts import RemoteHost
+from deployment.instances import RemoteInstance
 
 
-class StagingHost(Host):
+class StagingHost(RemoteHost):
 
     def __init__(self, *args, **kwargs):
 
-        self.instance = StagingInstance()
+        self.instance = RemoteInstance()
         super(StagingHost, self).__init__(*args, **kwargs)
 
     def get_settings_for_host(self):
@@ -21,6 +21,7 @@ class StagingHost(Host):
             'cache_path': os.path.join(project_path, 'cache'),
             'current_instance_path': os.path.join(project_path, 'current_instance'),
             'database_name': project_name,
+            'environment': 'staging',
             'hosts': self.settings['host_staging'],
             'log_path': os.path.join(project_path, 'log'),
             'previous_instance_path': os.path.join(project_path, 'previous_instance'),

@@ -4,7 +4,7 @@ from fabric.colors import *
 import deployment.utils as utils
 
 
-class Host(object):
+class RemoteHost(object):
     """
     Configuration for remote host
     =============================

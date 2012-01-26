@@ -1,23 +1,23 @@
-from fabric.api import env, settings, hide, abort
-from fabric.colors import *
-from fabric.contrib.files import exists, append
-import os
 import datetime
+from fabric.api import *
+from fabric.colors import *
+from fabric.contrib.files import *
+import os
 
 import deployment.utils as utils
 
 
-class StagingInstance(object):
+class RemoteInstance(object):
     """
-    Instance for this project on StagingHost
-    ========================================
+    Remote instance for this project on a remote Host
+    =================================================
 
-    Example instance structure on staging server:
+    Example instance structure on remote server:
 
-        /var/www/vhosts/s-PROJECTNAME/07aeb1319f4fbb2458028035c4c25a3044015be6/
+        /var/www/vhosts/PREFIX-PROJECTNAME/COMMIT_ID/
             backup/
             env/
-            media/          =>  /var/www/vhosts/s-PROJECTNAME/media
+            media/          =>  /var/www/vhosts/PREFIX-PROJECTNAME/media
             PROJECTNAME/
     """
 
@@ -180,10 +180,11 @@ class StagingInstance(object):
         else:
             result = 'FAILED'
 
-        message = '[%s] %s %s in STAGING by %s for %s' % (
+        message = '[%s] %s %s in %s by %s for %s' % (
             datetime.datetime.today().strftime('%Y-%m-%d %H:%M'),
             task_name.upper(),
             result,
+            env.environment.upper(),
             env.local_user.upper(),
             self.stamp
         )
