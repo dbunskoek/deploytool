@@ -37,9 +37,21 @@ class RemoteHost(Task):
         # check if all required project settings are present in fabric environment
         [require(r) for r in self.requirements]
 
-        # update fabric environment for host settings
         project_name = '%s%s' % (env.project_name_prefix, env.project_name)
         project_path = os.path.join(env.projects_root, project_name)
+        project_ssh_key = '/home/%s/.ssh/id_rsa_%s' % (env.local_user, project_name)
+
+        # check local ssh key for (project|remote)-user
+        if not os.path.exists(project_ssh_key):
+            message = str.join(' ', [
+                red('\nLocal ssh key not found: `%s`.\n' % project_ssh_key),
+                '1) Use `ssh-keygen` locally to create it.\n',
+                '2) Append `%s.pub` to `/home/%s/.ssh/authorized_keys` on remote server.\n' % (project_ssh_key, project_name),
+                '3) Rerun this task.',
+            ])
+            abort(message)
+
+        # update fabric environment for host settings
         env.update({
             'cache_path': os.path.join(project_path, 'cache'),
             'current_instance_path': os.path.join(project_path, 'current_instance'),
@@ -53,6 +65,7 @@ class RemoteHost(Task):
             'project_path': project_path,
             'scripts_path': os.path.join(project_path, 'scripts'),
             'user': project_name,
+            'key_filename': project_ssh_key,
         })
 
 
@@ -95,7 +108,10 @@ class RemoteTask(Task):
     def run(self, *args, **kwargs):
         """ Hide output, update fabric env, run task """
 
+        # hide all fabric output
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+
+            # check if HOST task was run before this task
             if not hasattr(env, 'current_instance_path'):
                 message = str.join(' ', [
                     red('\nRun a HOST task before running this remote task (e.g. `fab staging deploy`).\n'),
@@ -103,19 +119,25 @@ class RemoteTask(Task):
                     'Use `fab -d %s` to see this task\'s details.\n' % self.name,
                 ])
                 abort(message)
+
+            # load current instance unless task already provided something else
             if not hasattr(self, 'stamp'):
                 self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
 
+            # update fabric for instance settings
             self._update_fabric_environment()
+
+            # finally, run the task implementation!
             self()
 
     def _update_fabric_environment(self):
         """ Check requirements and update fabric environment """
 
+        # check if all required HOST settings are present in fabric environment
         [require(r) for r in self.requirements]
 
+        # update fabric environment for instance settings
         instance_path = os.path.join(env.project_path, self.stamp)
-
         env.update({
             'backup_path': os.path.join(instance_path, 'backup'),
             'instance_stamp': self.stamp,
@@ -309,7 +331,7 @@ class Rollback(RemoteTask):
             print(green('\nRestarting website.'))
             utils.commands.touch_wsgi(env.project_path)
 
-            print(yellow('\nRemoving this instance from filesystem.'))
+            print(green('\nRemoving this instance from filesystem.'))
             utils.commands.delete(env.instance_path)
 
             self.log(success=True)
