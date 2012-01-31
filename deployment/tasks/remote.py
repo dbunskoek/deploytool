@@ -150,7 +150,7 @@ class Deployment(RemoteTask):
             if kwargs.has_key('commit'):
                 self.stamp = kwargs['commit']
 
-            # deploy by HEAD for 
+            # deploy by HEAD for branch
             elif kwargs.has_key('branch'):
                 self.stamp = utils.source.get_commit_id(kwargs['branch'])
 
