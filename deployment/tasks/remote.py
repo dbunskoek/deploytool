@@ -362,8 +362,8 @@ class Database(RemoteTask):
 
     def __call__(self):
 
-        # TODO: timestamp as postfix
-        file_name = 'db_backup.sql'
+        _timestamp = datetime.datetime.today().strftime('%y%m%d%H%M')
+        file_name = '%s_%s.sql' % (env.database_name, _timestamp)
         cwd = os.getcwd()
 
         print(green('\nCreating backup.'))
