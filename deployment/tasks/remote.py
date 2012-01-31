@@ -1,5 +1,5 @@
 import datetime
-from fabric.api import abort, env, settings, hide
+from fabric.api import *
 from fabric.colors import *
 from fabric.contrib.files import append, exists
 from fabric.contrib.console import confirm
@@ -11,7 +11,7 @@ import deployment.utils as utils
 
 
 class RemoteHost(Task):
-    """ HOST: updates fabric environment """
+    """ HOST """
 
     requirements = [
         'environment',
@@ -96,6 +96,13 @@ class RemoteTask(Task):
         """ Hide output, update fabric env, run task """
 
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+            if not hasattr(env, 'current_instance_path'):
+                message = str.join(' ', [
+                    red('\nRun a HOST task before running this remote task (e.g. `fab staging deploy`).\n'),
+                    'Use `fab -l` to see a list of all available tasks.\n',
+                    'Use `fab -d %s` to see this task\'s details.\n' % self.name,
+                ])
+                abort(message)
             if not hasattr(self, 'stamp'):
                 self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
 
@@ -120,7 +127,7 @@ class RemoteTask(Task):
 
 class Deployment(RemoteTask):
     """
-    TASK: Deploy new instance to staging
+    Deploy new instance to staging
 
         Usage:
 
@@ -157,15 +164,12 @@ class Deployment(RemoteTask):
             # deploy by local HEAD for local current branch
             else:
                 self.stamp = utils.source.get_head()
-                question = str.join(' ', [
-                    yellow('\nAre you SURE you want to deploy'),
-                    magenta(utils.source.get_branch_name()),
-                    yellow('at'),
-                    magenta(self.stamp),
-                    yellow('?'),
-                ])
+                question = '\nDeploy branch `%s` at commit `%s` ?' % (
+                    utils.source.get_branch_name(),
+                    self.stamp
+                )
 
-                if not confirm(question):
+                if not confirm(yellow(question)):
                     abort(red('Aborted deployment. Run `fab -d %s` for options.' % self.name))
 
         super(Deployment, self).run(*args, **kwargs)
@@ -278,7 +282,7 @@ class Deployment(RemoteTask):
 
 
 class Rollback(RemoteTask):
-    """ TASK: Rollback current instance to previous instance """
+    """ Rollback current instance to previous instance """
 
     name = 'rollback'
 
@@ -316,7 +320,7 @@ class Rollback(RemoteTask):
 
 
 class Status(RemoteTask):
-    """ INFO: Show status information for staging environment """
+    """ Show status information for staging environment """
 
     name = 'status'
 
@@ -333,7 +337,7 @@ class Status(RemoteTask):
 
 
 class Media(RemoteTask):
-    """ TASK: Download media files as archive from staging """
+    """ Download media files as archive from staging """
 
     name = 'media'
 
@@ -356,7 +360,7 @@ class Media(RemoteTask):
 
 
 class Database(RemoteTask):
-    """ TASK: Download database export from staging """
+    """ Download database export from staging """
 
     name = 'database'
 
