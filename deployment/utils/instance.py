@@ -6,6 +6,21 @@ from fabric.contrib.files import *
 import commands
 
 
+def backup_database(virtualenv_path, scripts_path, file_path):
+
+    commands.python_run(
+        virtualenv_path,
+        '%s/db_backup.py "%s"' % (scripts_path, file_path)
+    )
+
+def restore_database(virtualenv_path, scripts_path, file_path):
+    """ Drop, create, restore """
+
+    commands.python_run(env.virtualenv_path, '%s/db_drop.py' % env.scripts_path)
+    commands.python_run(env.virtualenv_path, '%s/db_create.py' % env.scripts_path)
+    commands.sql_execute_file(env.virtualenv_path, env.scripts_path, file_path)
+
+
 def create_virtualenv(virtualenv_path, project_user):
     """ Creates virtual environment for instance and installs packages. """
 

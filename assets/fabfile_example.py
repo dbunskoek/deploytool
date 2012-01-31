@@ -1,11 +1,8 @@
 import os
 
-import deployment.live.tasks as live
-import deployment.local.tasks as local
-import deployment.staging.tasks as staging
+import deployment.tasks
 
 
-# project settings per environment
 settings_live = {
     'project_name': 'jouwomgeving',
     'project_name_prefix': 'l-',
@@ -28,9 +25,13 @@ settings_staging = {
     'projects_root': os.path.join('/', 'var', 'www', 'vhosts'),
 }
 
-# available tasks
-staging.deploy = staging.Deployment(project_settings=settings_staging)
-staging.database = staging.Database(project_settings=settings_staging)
-staging.media = staging.Media(project_settings=settings_staging)
-staging.rollback = staging.Rollback(project_settings=settings_staging)
-staging.status = staging.Status(project_settings=settings_staging)
+# hosts
+staging = deployment.tasks.remote.RemoteHost(project_settings=settings_staging)
+live = deployment.tasks.remote.RemoteHost(project_settings=settings_live)
+
+# tasks
+deploy = deployment.tasks.remote.Deployment()
+rollback = deployment.tasks.remote.Rollback()
+status = deployment.tasks.remote.Status()
+database = deployment.tasks.remote.Database()
+media = deployment.tasks.remote.Media()
