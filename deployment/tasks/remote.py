@@ -1,7 +1,8 @@
 import datetime
-from fabric.api import abort, env, settings, hide, local
+from fabric.api import abort, env, settings, hide
 from fabric.colors import *
 from fabric.contrib.files import append, exists
+from fabric.contrib.console import confirm
 from fabric.operations import require
 from fabric.tasks import Task
 import os
@@ -30,11 +31,13 @@ class RemoteHost(Task):
 
     def run(self):
 
-        # update fabric env with saved project settings (and check reqs.)
+        # update fabric environment for project settings
         env.update(self.settings)
+
+        # check if all required project settings are present in fabric environment
         [require(r) for r in self.requirements]
 
-        # update fabric env with host settings
+        # update fabric environment for host settings
         project_name = '%s%s' % (env.project_name_prefix, env.project_name)
         project_path = os.path.join(env.projects_root, project_name)
         env.update({
@@ -93,21 +96,19 @@ class RemoteTask(Task):
         """ Hide output, update fabric env, run task """
 
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-            self.update_fabric_environment()
+            if not hasattr(self, 'stamp'):
+                self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
+
+            self._update_fabric_environment()
             self()
 
-    def update_fabric_environment(self):
+    def _update_fabric_environment(self):
         """ Check requirements and update fabric environment """
 
-        # check for stamp which identifies a remote instance
-        if self.stamp == None:
-            abort(red('No stamp found for task.'))
-
-        # check fabric env for required keys
         [require(r) for r in self.requirements]
 
-        # update fabric env with instance settings
         instance_path = os.path.join(env.project_path, self.stamp)
+
         env.update({
             'backup_path': os.path.join(instance_path, 'backup'),
             'instance_stamp': self.stamp,
@@ -136,14 +137,36 @@ class Deployment(RemoteTask):
     name = 'deploy'
 
     def run(self, *args, **kwargs):
-        """ Load instance from CLI kwargs (commit/branch) or git HEAD """
+        """ 
+        Load instance from CLI kwargs
 
-        if kwargs.has_key('commit'):
-            self.stamp = kwargs['commit']
-        elif kwargs.has_key('branch'):
-            self.stamp = utils.source.get_commit_id(kwargs['branch'])
-        else:
-            self.stamp = utils.source.get_head()
+            default => deploy by HEAD for current branch by default
+            commit  => deploy by commit SHA1 ID
+            branch  => deploy by HEAD for branch
+        """
+
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+            # deploy by local commit
+            if kwargs.has_key('commit'):
+                self.stamp = kwargs['commit']
+
+            # deploy by HEAD for 
+            elif kwargs.has_key('branch'):
+                self.stamp = utils.source.get_commit_id(kwargs['branch'])
+
+            # deploy by local HEAD for local current branch
+            else:
+                self.stamp = utils.source.get_head()
+                question = str.join(' ', [
+                    yellow('\nAre you SURE you want to deploy'),
+                    magenta(utils.source.get_branch_name()),
+                    yellow('at'),
+                    magenta(self.stamp),
+                    yellow('?'),
+                ])
+
+                if not confirm(question):
+                    abort(red('Aborted deployment. Run `fab -d %s` for options.' % self.name))
 
         super(Deployment, self).run(*args, **kwargs)
 
@@ -259,11 +282,6 @@ class Rollback(RemoteTask):
 
     name = 'rollback'
 
-    def run(self, *args, **kwargs):
-
-        self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
-        super(Rollback, self).run()
-
     def __call__(self):
 
         # check if rollback is possible
@@ -302,11 +320,6 @@ class Status(RemoteTask):
 
     name = 'status'
 
-    def run(self, *args, **kwargs):
-
-        self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
-        super(Status, self).run()
-
     def __call__(self):
 
         print(green('\nCurrent instance:'))
@@ -323,11 +336,6 @@ class Media(RemoteTask):
     """ TASK: Download media files as archive from staging """
 
     name = 'media'
-
-    def run(self, *args, **kwargs):
-
-        self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
-        super(Media, self).run()
 
     def __call__(self):
 
@@ -351,11 +359,6 @@ class Database(RemoteTask):
     """ TASK: Download database export from staging """
 
     name = 'database'
-
-    def run(self, *args, **kwargs):
-
-        self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
-        super(Database, self).run()
 
     def __call__(self):
 
