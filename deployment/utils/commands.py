@@ -6,6 +6,7 @@ import subprocess
 
 
 def create_tarball(project_path, target, file_name='archive.tar'):
+    """ Create archive from target file/folder """
 
     with cd(project_path):
         run('tar -cf ./%s ./%s' % (file_name, target))
@@ -20,6 +21,7 @@ def download_file(remote_path, local_path, delete_remote=True):
 
 
 def tail_file(file_path, lines=5):
+    """ Output the last lines from a file to console """
 
     return run('tail --lines=5 %s' % file_path)
 
@@ -65,13 +67,13 @@ def touch_wsgi(project_path):
 
 
 def python_run(virtualenv_path, command):
-    """ Helper to execute Python commands for current virtual environment """
+    """ Execute Python commands for current virtual environment """
 
     return run('%s/bin/python %s' % (virtualenv_path, command))
 
 
 def django_manage(virtualenv_path, source_path, command):
-    """ Helper to execute Django management commands """
+    """ Execute Django management command """
 
     python_path = os.path.join(source_path, 'manage.py')
     python_command = '%s %s' % (python_path, command)
@@ -79,14 +81,14 @@ def django_manage(virtualenv_path, source_path, command):
 
 
 def sql_execute_query(virtualenv_path, scripts_path, query):
-    """ Helper to execute mysql command executing supplied query """
+    """ Execute mysql command for supplied query """
 
     python_command = '%s/sql_query.py "%s"' % (scripts_path, query)
     python_run(virtualenv_path, python_command)
 
 
 def sql_execute_file(virtualenv_path, scripts_path, filename):
-    """ Helper to execute mysql file """
+    """ Execute mysql file """
 
     python_command = '%s/sql_file.py "%s"' % (scripts_path, filename)
     python_run(virtualenv_path, python_command)
