@@ -22,7 +22,7 @@ def restore_database(virtualenv_path, scripts_path, file_path):
 
 
 def create_virtualenv(virtualenv_path, project_user):
-    """ Creates virtual environment for instance and installs packages. """
+    """ Creates virtual environment for instance """
 
     run('virtualenv %s --no-site-packages' % virtualenv_path)
 
@@ -59,7 +59,7 @@ def set_current_instance(project_path, instance_path):
 
 
 def rollback(project_path):
-    """ Remove current instance and rename previous to current """
+    """ Updates symlinks: Remove current instance and rename previous to current """
 
     with cd(project_path):
         if exists('./previous_instance'):
