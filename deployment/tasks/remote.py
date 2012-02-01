@@ -39,19 +39,8 @@ class RemoteHost(Task):
 
         project_name = '%s%s' % (env.project_name_prefix, env.project_name)
         project_path = os.path.join(env.projects_root, project_name)
-        project_ssh_key = '/home/%s/.ssh/id_rsa_%s' % (env.local_user, project_name)
 
-        # check local ssh key for (project|remote)-user
-        if not os.path.exists(project_ssh_key):
-            message = str.join(' ', [
-                red('\nLocal ssh key not found: `%s`.\n' % project_ssh_key),
-                '1) Use `ssh-keygen` locally to create it.\n',
-                '2) Append `%s.pub` to `/home/%s/.ssh/authorized_keys` on remote server.\n' % (project_ssh_key, project_name),
-                '3) Rerun this task.',
-            ])
-            abort(message)
-
-        # update fabric environment for host settings
+        print(green('\nInitializing fabric environment for %s.' % yellow(env.environment)))
         env.update({
             'cache_path': os.path.join(project_path, 'cache'),
             'current_instance_path': os.path.join(project_path, 'current_instance'),
@@ -65,7 +54,6 @@ class RemoteHost(Task):
             'project_path': project_path,
             'scripts_path': os.path.join(project_path, 'scripts'),
             'user': project_name,
-            'key_filename': project_ssh_key,
         })
 
 
@@ -186,12 +174,15 @@ class Deployment(RemoteTask):
             # deploy by local HEAD for local current branch
             else:
                 self.stamp = utils.source.get_head()
-                question = '\nDeploy branch `%s` at commit `%s` ?' % (
-                    utils.source.get_branch_name(),
-                    self.stamp
-                )
+                question = str.join(' ', [
+                    green('\nDeploy branch'),
+                    yellow(utils.source.get_branch_name()),
+                    green('at commit'),
+                    yellow(self.stamp),
+                    green('?'),
+                ])
 
-                if not confirm(yellow(question)):
+                if not confirm(question, default=False):
                     abort(red('Aborted deployment. Run `fab -d %s` for options.' % self.name))
 
         super(Deployment, self).run(*args, **kwargs)
