@@ -1,0 +1,5 @@
+GRANT ALL PRIVILEGES ON `%(database_name)s`.*
+	TO '%(username)s'@'localhost'
+	IDENTIFIED BY '%(password)s'
+	WITH GRANT OPTION;
+FLUSH PRIVILEGES;

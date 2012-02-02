@@ -16,6 +16,7 @@ class Setup(Task):
         'admin_email',
         'cache_path',
         'current_instance_path',
+        'database_name',
         'environment',
         'log_path',
         'local_user',
@@ -93,20 +94,24 @@ class Setup(Task):
         print(yellow('\nProvide info for file creation:'))
         local_templates_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'templates')
         full_project_name = str.join('', [env.project_name_prefix, env.project_name])
+        database_name = prompt('Database name: ', default=full_project_name)
+        database_user = prompt('Database username: ', default=full_project_name)
+        database_pass = prompt('Database password: ', validate=self._validate_password)
 
         files_to_create = [
             {'template': 'settings_py.txt', 'file': 'settings.py', },
             {'template': 'credentials_py.txt', 'file': 'scripts/credentials.py', },
             {'template': 'django_wsgi.txt', 'file': 'django.wsgi', },
+            {'template': 'db_provision_user_sql.txt', 'file': 'scripts/db_provision_user.sql', },
         ]
 
         context = {
             'project_name': env.project_name,
             'current_instance_path': env.current_instance_path,
             'cache_path': env.cache_path,
-            'database_name': prompt('Database name: ', default=full_project_name),
-            'username': prompt('Database username: ', default=full_project_name),
-            'password': prompt('Database password: ', validate=self._validate_password),
+            'database_name': database_name,
+            'username': database_user,
+            'password': database_pass,
         }
 
         # create files from templates (using fabric env and user input)
@@ -118,6 +123,15 @@ class Setup(Task):
                 context = context,
                 use_sudo = True
             )
+
+        # create empty database
+        print(green('\nCreating empty database'))
+        sudo('mysqladmin --user=%s -p create %s' % (env.provisioning_user, database_name))
+
+        # create new database user with all schema privileges
+        print(green('\nCreating new database user'))
+        _args = (env.provisioning_user, database_name, os.path.join(env.scripts_path, 'db_provision_user.sql'))
+        sudo('mysql --user=%s -p --database="%s" < %s' % _args)
 
         # determine first available port # for vhost
         #   TODO: rewrite grep statement to return last port
@@ -132,7 +146,6 @@ class Setup(Task):
         new_port_nr = int(ports[0]) + 1
         print 'Port %s will be used for this project' % yellow(new_port_nr)
 
-        
         # create apache/nginx conf files
         print(green('\nCreating vhost conf files'))
         nginx_conf_path = os.path.join('/', 'etc', 'nginx', 'conf.d')
