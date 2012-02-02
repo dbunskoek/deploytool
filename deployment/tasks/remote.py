@@ -114,27 +114,21 @@ class RemoteTask(Task):
             if not hasattr(self, 'stamp'):
                 self.stamp = utils.instance.get_instance_stamp(env.current_instance_path)
 
-            # update fabric for instance settings
-            self._update_fabric_environment()
+            # check if all required HOST settings are present in fabric environment
+            [require(r) for r in self.requirements]
+
+            # update fabric environment for instance settings
+            instance_path = os.path.join(env.project_path, self.stamp)
+            env.update({
+                'backup_path': os.path.join(instance_path, 'backup'),
+                'instance_stamp': self.stamp,
+                'instance_path': instance_path,
+                'source_path': os.path.join(instance_path, env.project_name),
+                'virtualenv_path': os.path.join(instance_path, 'env'),
+            })
 
             # finally, run the task implementation!
             self()
-
-    def _update_fabric_environment(self):
-        """ Check requirements and update fabric environment """
-
-        # check if all required HOST settings are present in fabric environment
-        [require(r) for r in self.requirements]
-
-        # update fabric environment for instance settings
-        instance_path = os.path.join(env.project_path, self.stamp)
-        env.update({
-            'backup_path': os.path.join(instance_path, 'backup'),
-            'instance_stamp': self.stamp,
-            'instance_path': instance_path,
-            'source_path': os.path.join(instance_path, env.project_name),
-            'virtualenv_path': os.path.join(instance_path, 'env'),
-        })
 
 
 class Deployment(RemoteTask):
@@ -179,7 +173,7 @@ class Deployment(RemoteTask):
                 _args = (utils.source.get_branch_name(), self.stamp)
                 question = '\nDeploy branch %s at commit %s?' % _args
 
-                if not confirm(yellow(question), default=False):
+                if not confirm(yellow(question)):
                     abort(red('Aborted deployment. Run `fab -d %s` for options.' % self.name))
 
         super(Deployment, self).run(*args, **kwargs)
