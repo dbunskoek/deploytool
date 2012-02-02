@@ -1,7 +1,7 @@
-import datetime
+from datetime import datetime
 from fabric.api import *
 from fabric.colors import *
-from fabric.contrib.files import append, exists
+from fabric.contrib.files import *
 from fabric.contrib.console import confirm
 from fabric.operations import require
 from fabric.tasks import Task
@@ -15,6 +15,7 @@ class RemoteHost(Task):
 
     requirements = [
         'admin_email',
+        'website_name',
         'environment',
         'hosts',
         'project_name',
@@ -25,10 +26,10 @@ class RemoteHost(Task):
     def __init__(self, *args, **kwargs):
 
         # use environment as task name
-        self.name = kwargs['project_settings']['environment']
+        self.name = kwargs['settings']['environment']
 
         # save project settings in instance
-        self.settings = kwargs['project_settings']
+        self.settings = kwargs['settings']
 
     def run(self):
 
@@ -41,7 +42,7 @@ class RemoteHost(Task):
         project_name = '%s%s' % (env.project_name_prefix, env.project_name)
         project_path = os.path.join(env.projects_root, project_name)
 
-        print(green('\nInitializing fabric environment for %s.' % yellow(env.environment)))
+        print(green('\nInitializing fabric environment for %s.' % yellow(self.name)))
         env.update({
             'cache_path': os.path.join(project_path, 'cache'),
             'current_instance_path': os.path.join(project_path, 'current_instance'),
@@ -84,7 +85,7 @@ class RemoteTask(Task):
             result = 'failed'
 
         message = '[%s] %s %s in %s by %s for %s' % (
-            datetime.datetime.today().strftime('%Y-%m-%d %H:%M'),
+            datetime.today().strftime('%Y-%m-%d %H:%M'),
             self.name,
             result,
             env.environment,
@@ -97,7 +98,7 @@ class RemoteTask(Task):
     def run(self, *args, **kwargs):
         """ Hide output, update fabric env, run task """
 
-        # hide all fabric output
+        # hide fabric output
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
 
             # check if HOST task was run before this task
@@ -175,15 +176,10 @@ class Deployment(RemoteTask):
             # deploy by local HEAD for local current branch
             else:
                 self.stamp = utils.source.get_head()
-                question = str.join(' ', [
-                    green('\nDeploy branch'),
-                    yellow(utils.source.get_branch_name()),
-                    green('at commit'),
-                    yellow(self.stamp),
-                    green('?'),
-                ])
+                _args = (utils.source.get_branch_name(), self.stamp)
+                question = '\nDeploy branch %s at commit %s?' % _args
 
-                if not confirm(question, default=False):
+                if not confirm(yellow(question), default=False):
                     abort(red('Aborted deployment. Run `fab -d %s` for options.' % self.name))
 
         super(Deployment, self).run(*args, **kwargs)
@@ -380,8 +376,8 @@ class Database(RemoteTask):
 
     def __call__(self):
 
-        _timestamp = datetime.datetime.today().strftime('%y%m%d%H%M')
-        file_name = '%s_%s.sql' % (env.database_name, _timestamp)
+        timestamp = datetime.today().strftime('%y%m%d%H%M')
+        file_name = '%s_%s.sql' % (env.database_name, timestamp)
         cwd = os.getcwd()
 
         print(green('\nCreating backup.'))

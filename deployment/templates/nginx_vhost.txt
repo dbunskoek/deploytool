@@ -1,32 +1,32 @@
-upstream backend-s-jouwomgeving {
-	server 127.0.0.1:8129;
+upstream backend-%(project_name_prefix)s%(project_name)s {
+	server 127.0.0.1:%(port_number)s;
 }
 
 server {
 	listen 80;
-	server_name jouwomgeving.leukeleu.nl;
+	server_name %(website_name)s;
 
-	access_log /var/www/vhosts/s-jouwomgeving/log/nginx_access.log;
-	error_log /var/www/vhosts/s-jouwomgeving/log/nginx_error.log;
+	access_log %(log_path)s/nginx_access.log;
+	error_log %(log_path)s/nginx_error.log;
 
 	location / {
-		proxy_pass http://127.0.0.1:8129/;
+		proxy_pass http://127.0.0.1:%(port_number)s/;
         # include /etc/nginx/conf.d/proxy.conf;
-        # auth_basic "Staging Jouw Omgeving";
+        # auth_basic "Staging %(project_name)s";
         # auth_basic_user_file /var/www/vhosts/s-jouwomgeving/htpasswd/.htpasswd;
 	}
 
 	location /media/ {
-		root /var/www/vhosts/s-jouwomgeving/current_instance;
+		root %(current_instance_path)s;
 		expires max;
 	}
 
 	location /static/ {
-		root /var/www/vhosts/s-jouwomgeving/current_instance/jouwomgevinhg;
+		root %(current_instance_path)s/jouwomgeving;
 		expires max;
 	}
 
 	location /media/admin/ {
-		alias /var/www/vhosts/s-jouwomgeving/current_instance/env/lib/python2.6/site-packages/django/contrib/admin/media/;
+		alias %(current_instance_path)s/env/lib/python2.6/site-packages/django/contrib/admin/media/;
 	}
 }

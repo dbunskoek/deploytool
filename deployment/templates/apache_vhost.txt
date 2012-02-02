@@ -1,16 +1,16 @@
-NameVirtualHost *:8129
-Listen 127.0.0.1:8129
+NameVirtualHost *:%(port_number)s
+Listen 127.0.0.1:%(port_number)s
 
-<VirtualHost *:8129>
-	ServerName jouwomgeving.leukeleu.nl
-	DocumentRoot /var/www/vhosts/s-jouwomgeving/
-	ServerAdmin bheesink@leukeleu.nl
+<VirtualHost *:%(port_number)s>
+	ServerName %(website_name)s
+	DocumentRoot %(project_path)s
+	ServerAdmin %(admin_email)s
 
 	LogLevel warn
-	CustomLog /var/www/vhosts/s-jouwomgeving/log/apache_access.log combined
-	ErrorLog /var/www/vhosts/s-jouwomgeving/log/apache_error.log
+	CustomLog %(log_path)s/apache_access.log combined
+	ErrorLog %(log_path)s/apache_error.log
 
-	WSGIDaemonProcess s-jouwomgeving user=s-jouwomgeving group=s-jouwomgeving threads=20 processes=2
-	WSGIProcessGroup s-jouwomgeving
-	WSGIScriptAlias / /var/www/vhosts/s-jouwomgeving/django.wsgi
+	WSGIDaemonProcess %(project_name_prefix)s%(project_name)s user=%(project_user)s group=%(project_user)s threads=20 processes=2
+	WSGIProcessGroup %(project_name_prefix)s%(project_name)s
+	WSGIScriptAlias / %(project_path)s/django.wsgi
 </VirtualHost>
