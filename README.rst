@@ -2,7 +2,7 @@
 Fabric Deployment
 =================
 
-Deploy a project to an existing website on a remote server.
+Project application for deployment, provisioning and local tasks.
 
 Remote requirements:
 ====================
@@ -15,52 +15,14 @@ Local requirements:
 * Fabric (1.2.2+)
 * Git (1.6+)
 
-Remote setup:
-=============
-NOTE: This section is still WIP.
-
-::
-
-    # connect to server (install remote requirements if needed!)
-    $ ssh LOCALUSER@REMOTESERVER
-
-    # add and swith to project user
-    $ sudo adduser PROJECTUSER
-    $ su PROJECTUSER
-
-    # create/copy files and folders for project
-    $ cd /var/www/vhost
-    $ mkdir PROJECTNAME
-    $ cd PROJECTNAME
-    $ mkdir PROJECTNAME/cache
-    $ mkdir PROJECTNAME/log
-    $ mkdir PROJECTNAME/media
-    $ mkdir PROJECTNAME/scripts
-    "copy assets/scripts to scripts" (TODO command)
-
-    # configuration (see assets for examples)
-    $ vim PROJECTNAME/scripts/credentials.py
-    $ vim PROJECTNAME/settings.py
-    $ vim PROJECTNAME/django.wsgi
-    $ vim /etc/nginx/sites-available/PROJECTNAME
-    $ vim /etc/apache/sites-available/PROJECTNAME
-
-    ... (TODO)
-
-Local setup:
-============
-NOTE: This section is still WIP.
-
-* TODO
-
 Usage:
 ======
-NOTE: This section is still WIP.
+TODO ...
 
 ::
 
     # list all available tasks
-    $ fab --list
+    $ fab -l
 
     # show detailed information for task
     $ fab -d TASKNAME
@@ -68,4 +30,6 @@ NOTE: This section is still WIP.
     # execute task with parameters
     $ fab TASKNAME:ARG=VALUE
 
-...
+    # example: deploy latest version of local current branch to staging server
+    $ fab staging deploy
+

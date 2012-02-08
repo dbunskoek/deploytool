@@ -99,7 +99,7 @@ class RemoteTask(Task):
         """ Hide output, update fabric env, run task """
 
         # hide fabric output
-        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+        with settings(hide('warnings', 'stdout', 'stderr'), warn_only=True):
 
             # check if HOST task was run before this task
             if not hasattr(env, 'current_instance_path'):
