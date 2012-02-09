@@ -2,7 +2,6 @@ from fabric.api import *
 from fabric.colors import *
 from fabric.contrib.files import *
 import os
-import subprocess
 
 
 def create_tarball(project_path, target, file_name='archive.tar'):
@@ -23,7 +22,7 @@ def download_file(remote_path, local_path, delete_remote=True):
 def tail_file(file_path, lines=5):
     """ Output the last lines from a file to console """
 
-    return run('tail --lines=5 %s' % file_path)
+    return run('tail --lines=%d %s' % (lines, file_path))
 
 
 def read_link(path):
@@ -92,21 +91,3 @@ def sql_execute_file(virtualenv_path, scripts_path, filename):
 
     python_command = '%s/sql_file.py "%s"' % (scripts_path, filename)
     python_run(virtualenv_path, python_command)
-
-
-def subprocess_popen(args):
-    """
-    Helper to execute a command in a subprocess
-        - output and errors are piped to a string
-        - raw output-string is returned
-
-    See also
-        - http://docs.python.org/library/subprocess.html
-        - http://stackoverflow.com/questions/3947191/getting-the-entire-output-from-subprocess-popen/3947224#3947224
-    """
-
-    if args:
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        return proc.communicate()[0]
-    else:
-        return ''

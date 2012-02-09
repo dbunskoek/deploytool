@@ -3,8 +3,6 @@ from fabric.colors import *
 from fabric.contrib.files import *
 import os
 
-from commands import subprocess_popen
-
 
 def transfer_source(upload_path, tree):
     """
@@ -42,7 +40,7 @@ def list_tags():
     The tags are split to a list, converted to integers and reversed.
     """
 
-    output = subprocess_popen(['git tag'])
+    output = local('git tag', capture=True)
     tags = [int(t) for t in output.split('\n') if t != '']
     tags.reverse()
 
@@ -52,20 +50,19 @@ def list_tags():
 def list_commits(amount=10, branch='master'):
     """ Pipe git commit log to list """
 
-    output = subprocess_popen(['git log %s -n %d --pretty=format:%%H' % (branch, amount)])
+    output = local('git log %s -n %d --pretty=format:%%H' % (branch, amount), capture=True)
     return [c.strip() for c in output.split('\n') if c != '']
 
 
 def get_branch_name():
 
-    return subprocess_popen('git rev-parse --abbrev-ref HEAD').strip()
+    return local('git rev-parse --abbrev-ref HEAD', capture=True).strip()
 
 
 def get_commit_id(tree):
 
-    return subprocess_popen('git rev-parse %s' % tree).strip()
+    return local('git rev-parse %s' % tree, capture=True).strip()
 
 def get_head():
 
     return get_commit_id('HEAD')
-
