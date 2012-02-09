@@ -9,7 +9,28 @@ import os
 
 
 class Setup(Task):
-    """ Provision project """
+    """
+    Provision project
+
+        Sets up a new project on a remote server:
+            - project user
+            - database
+            - database user
+            - files & folders
+            - apache & nginx configuration
+            - optional .htpasswd security
+
+        Requirements:
+            - remote user with sudo rights
+            - database root user with username/pwd equal to sudo user
+            - your ssh public key on remote server or sudo pwd
+
+        Usage:
+            # copy sudo/db-root password to clipboard
+            $ fab staging setup
+            # answer prompted questions
+            # paste pwd if challenged
+    """
 
     name = 'setup'
     requirements = [
@@ -37,6 +58,8 @@ class Setup(Task):
         [require(r) for r in self.requirements]
 
         # connect with provision user (who must have sudo rights on host)
+        # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
+        # make sure local user either knows remote password, or has its local public key on remote end
         env.update({'user': env.provisioning_user})
 
         # prompt for start
@@ -44,7 +67,7 @@ class Setup(Task):
         if not confirm(yellow(question)):
             abort(red('\nProvisioning cancelled.'))
 
-        # creating project_user
+        # create project_user
         project_user = str.join('', [env.project_name_prefix, env.project_name])
         print(green('\nCreating project user: %s ' % project_user))
 
@@ -59,13 +82,13 @@ class Setup(Task):
             if not confirm(yellow(question)):
                 abort(red('Provisioning aborted because user %s is not available.' % remote_user_name))
 
-        # check project paths
+        # check for existing project paths, and abort if found
         if not exists(env.project_root):
             abort(red('Project root not found at: %s' % env.project_root))
         if exists(env.project_path):
             abort(red('Project path already exists at: %s' % env.project_path))
 
-        # create folders for project
+        # create folders
         print(green('\nCreating folders'))
         folders_to_create = [
             env.project_path,
@@ -78,7 +101,7 @@ class Setup(Task):
         for folder in folders_to_create:
             sudo('mkdir %s' % folder)
 
-        # copy script files
+        # copy files
         print(green('\nCopying script files'))
         local_scripts_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'scripts')
         files_to_copy =  os.listdir(local_scripts_path)
@@ -124,11 +147,11 @@ class Setup(Task):
                 use_sudo = True
             )
 
-        # create empty database
+        # create empty database (uses database root user)
         print(green('\nCreating empty database'))
         sudo('mysqladmin --user=%s -p create %s' % (env.provisioning_user, database_name))
 
-        # create new database user with all schema privileges
+        # create new database user with all schema privileges (uses database root user)
         print(green('\nCreating new database user'))
         _args = (env.provisioning_user, database_name, os.path.join(env.scripts_path, 'db_provision_user.sql'))
         sudo('mysql --user=%s -p --database="%s" < %s' % _args)
@@ -174,7 +197,7 @@ class Setup(Task):
             use_sudo = True
         )
 
-        # confirm setup htpasswd
+        # ask for optional setup of .htpasswd (used for staging environment)
         if confirm(yellow('\nSetup htpasswd for project?')):
             htpasswd_path = os.path.join(env.project_path, 'htpasswd')
             htpasswd = '%s%s' % (env.project_name, datetime.now().year)
@@ -187,13 +210,13 @@ class Setup(Task):
         print(green('\nChowning %s for remote project user %s' % (project_user, env.project_path)))
         sudo('chown -R %s:%s %s' % (project_user, project_user, env.project_path))
 
-        # testing webserver vhost config files
+        # display test results for webserver vhost config files
         print(green('\nTesting webserver configuration'))
         with settings(hide('warnings', 'stderr'), warn_only=True):
             sudo('/etc/init.d/httpd configtest')
             sudo('/etc/init.d/nginx configtest')
 
-        # confirm for webserver restart
+        # prompt for webserver restart 
         if confirm(yellow('\nOK to restart webserver?')):
             sudo('/etc/init.d/httpd restart')
             sudo('/etc/init.d/nginx restart')
