@@ -99,7 +99,7 @@ class RemoteTask(Task):
         """ Hide output, update fabric env, run task """
 
         # hide fabric output
-        with settings(hide('warnings', 'stdout', 'stderr'), warn_only=True):
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
 
             # check if HOST task was run before this task
             if not hasattr(env, 'current_instance_path'):
@@ -133,7 +133,7 @@ class RemoteTask(Task):
 
 class Deployment(RemoteTask):
     """
-    Deploy new instance to staging
+    REMO - Deploy new instance to staging
 
         Usage:
 
@@ -286,7 +286,7 @@ class Deployment(RemoteTask):
 
 
 class Rollback(RemoteTask):
-    """ Rollback current instance to previous instance """
+    """ REMO - Rollback current instance to previous instance """
 
     name = 'rollback'
 
@@ -324,7 +324,7 @@ class Rollback(RemoteTask):
 
 
 class Status(RemoteTask):
-    """ Show status information for staging environment """
+    """ REMO - Show status information for staging environment """
 
     name = 'status'
 
@@ -341,7 +341,7 @@ class Status(RemoteTask):
 
 
 class Media(RemoteTask):
-    """ Download media files as archive from staging """
+    """ REMO - Download media files as archive from staging """
 
     name = 'media'
 
@@ -364,7 +364,7 @@ class Media(RemoteTask):
 
 
 class Database(RemoteTask):
-    """ Download database export from staging """
+    """ REMO - Download database export from staging """
 
     name = 'database'
 
