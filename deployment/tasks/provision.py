@@ -10,7 +10,7 @@ import os
 
 class Setup(Task):
     """
-    Provision project
+    PROV - Provision project
 
         Sets up a new project on a remote server:
             - project user
@@ -233,3 +233,93 @@ class Setup(Task):
 
         return password.strip()
 
+
+class Enable(Task):
+    """
+    PROV - Enable developer for project by SSH key
+
+        Transfers a selected user's public SSH key to remote user's authorized key.
+        This regulates access for admins without having to divulge project passwords.
+    """
+
+    name = 'enable'
+
+    def run(self):
+
+        # connect with provision user (who must have sudo rights on host)
+        # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
+        # make sure local user either knows remote password, or has its local public key on remote end
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+            env.update({'user': env.provisioning_user})
+            sudo('ls')  # we want sudo NOW
+
+        project_user = env.project_name_prefix + env.project_name
+        local_ssh_path = os.path.join('/', 'home', env.local_user, '.ssh')
+        local_ssh_files = os.listdir(local_ssh_path)
+        local_key_files = [f for f in local_ssh_files if f[-4:] == '.pub']
+        selected_key_nr = 0
+        remote_auth_keys = os.path.join('/', 'home', project_user, '.ssh', 'authorized_keys')
+
+        if not local_key_files:
+            abort(red('No public keys found in %s' % local_ssh_path))
+        else:
+            print(green('\nShowing all available public keys in %s:' % local_ssh_path))
+
+            # display list of availabe public keys
+            for file in local_key_files:
+
+                # grab public key from file and check remote if it's already authorized
+                index = local_key_files.index(file)
+                output = '[%d] %s' % (index, file)
+                key_file = os.path.join(local_ssh_path, local_key_files[index])
+
+                # mark keys which are already authorized
+                if self._is_key_authorized(remote_auth_keys, self._read_key(key_file)):
+                    output = output + ' (already authorized)'
+
+                print output
+
+            # save key_list to instance for use in user input validation
+            self.key_list_copy_for_validation = local_key_files
+
+            # ask user which key to transfer
+            _args = (remote_auth_keys, env.environment)
+            selected_key_nr = prompt(
+                yellow('\nTransfer which key to %s on %s?') % _args,
+                default = 0,
+                validate = self._validate_key_selection
+            )
+
+        # grab key from selection (if multiple) or default (if single)
+        key_file = os.path.join(local_ssh_path, local_key_files[selected_key_nr])
+        key_to_transfer = self._read_key(key_file)
+
+        # check if key isn't already present on the remote end
+        if self._is_key_authorized(remote_auth_keys, key_to_transfer):
+            abort(red('Public key already present in remote authorized_keys.'))
+
+        # all is well, so append local user's public key to remote user's authorized_keys
+        print(green('\nTransferring key'))
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+            append(remote_auth_keys, key_to_transfer, use_sudo=True)
+
+    def _read_key(self, key_file):
+
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+            return '%s' % local('cat %s' % key_file, capture=True).strip()
+
+    def _is_key_authorized(self, auth_keys_file, public_key):
+
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+            authorized_keys = sudo('cat %s' % auth_keys_file)
+            return bool(public_key in authorized_keys.split('\r\n'))
+
+    def _validate_key_selection(self, selected_key_nr):
+
+        try:
+            # check for non-numeric and out-of-bounds
+            self.key_list_copy_for_validation[int(selected_key_nr)]
+        except:
+            raise Exception(red('Invalid key number. See above list for available keys.'))
+
+        return int(selected_key_nr)
