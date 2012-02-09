@@ -22,7 +22,7 @@ TODO ...
 ::
 
     # list all available tasks
-    $ fab -l
+    $ fab list
 
     # show detailed information for task
     $ fab -d TASKNAME

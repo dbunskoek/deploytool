@@ -44,3 +44,7 @@ media = tasks.remote.Media()
 
 # provisioning
 setup = tasks.provision.Setup()
+enable = tasks.provision.Enable()
+
+# generic
+list_tasks = tasks.generic.ListTasks()
