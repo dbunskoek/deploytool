@@ -7,14 +7,14 @@ Project application for deployment, provisioning and local tasks.
 Remote requirements:
 ====================
 * Apache
-* MYSQL
-* Nginx
 * gcc
+* Nginx
+* MYSQL
+* MySQL-python
 * OpenSSH
 * Pip (0.8.1+)
-  - MySQL-python
-  - virtualenv (1.6+)
 * Python (2.6)
+* virtualenv (1.6+)
 
 Local requirements:
 ===================
