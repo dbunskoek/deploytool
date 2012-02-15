@@ -250,11 +250,14 @@ class Deployment(RemoteTask):
                 os.path.join(env.backup_path, 'db_backup_start.sql')
             )
 
-            print(green('\nSyncing database.'))
-            utils.commands.django_manage(env.virtualenv_path, env.source_path, 'syncdb')
+            with settings(show('stdout')):
+                print(green('\nSyncing database.'))
+                utils.commands.django_manage(env.virtualenv_path, env.source_path, 'syncdb')
+                print('')
 
-            print(green('\nMigrating database.'))
-            utils.commands.django_manage(env.virtualenv_path, env.source_path, 'migrate')
+                print(green('\nMigrating database.'))
+                utils.commands.django_manage(env.virtualenv_path, env.source_path, 'migrate')
+                print('')
 
             print(green('\nBacking up database at end.'))
             utils.instance.backup_database(
