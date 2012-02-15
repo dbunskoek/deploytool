@@ -60,27 +60,38 @@ class Setup(Task):
         # connect with provision user (who must have sudo rights on host)
         # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
         # make sure local user either knows remote password, or has its local public key on remote end
-        env.update({'user': env.provisioning_user})
+        print(green('\nConnecting with user %s ' % yellow(env.provisioning_user)))
+        with settings(hide('running', 'stdout')):
+            env.update({'user': env.provisioning_user})
+            sudo('ls')  # aks for sudo NOW
 
         # prompt for start
         question = '\nStart provisioning of %s on %s?' % (env.project_name, env.environment)
         if not confirm(yellow(question)):
             abort(red('\nProvisioning cancelled.'))
 
-        # create project_user
+        # create new project_user
         project_user = str.join('', [env.project_name_prefix, env.project_name])
         print(green('\nCreating project user: %s ' % project_user))
 
         try:
-            with settings(hide('warnings', 'stderr'), warn_only=True):
-                sudo('adduser %s' % project_user)
+            # setup new user/pwd
+            sudo('useradd %s' % project_user)
+            sudo('passwd %s' % project_user)
+
+            # setup SSH for user
+            sudo('mkdir /home/%s/.ssh' % project_user)
+            sudo('touch /home/%s/.ssh/authorized_keys' % project_user)
+            sudo('chmod -R 700 /home/%s/.ssh' % project_user)
+            sudo('chown -R %s:%s /home/%s/.ssh' % (project_user, project_user, project_user))
+
         except:
             # user already exists, ask if this user is available
-            _args = (remote_user_name, env.project_name, env.environment)
+            _args = (project_user, env.project_name, env.environment)
             question = '\nUser %s already exist. Use this user for %s on %s?' % _args
 
             if not confirm(yellow(question)):
-                abort(red('Provisioning aborted because user %s is not available.' % remote_user_name))
+                abort(red('Provisioning aborted because user %s is not available.' % project_user))
 
         # check for existing project paths, and abort if found
         if not exists(env.project_root):
@@ -102,7 +113,7 @@ class Setup(Task):
             sudo('mkdir %s' % folder)
 
         # copy files
-        print(green('\nCopying script files'))
+        print(green('\n\nCopying script files'))
         local_scripts_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'scripts')
         files_to_copy =  os.listdir(local_scripts_path)
 
@@ -157,16 +168,21 @@ class Setup(Task):
         sudo('mysql --user=%s -p --database="%s" < %s' % _args)
 
         # determine first available port # for vhost
-        #   TODO: rewrite grep statement to return last port
         print(green('\nDetermining port # for project'))
         apache_conf_path = os.path.join('/', 'etc', 'httpd', 'conf.d')
 
-        with settings(hide('warnings', 'stdout', 'stderr'), warn_only=True):
-            vhosts = run('grep -hr "NameVirtualHost" %s | sort' % apache_conf_path)
+        with settings(hide('stdout')):
+            try:
+                # grep vhosts => reverse list => awk top port #
+                output = run('%s | %s | %s' % (
+                    'grep -hr "NameVirtualHost" %s' % apache_conf_path,
+                    'sort -r',
+                    'awk \'{if (NR==1) { print substr($2,3) }}\''
+                ))
+                new_port_nr = int(output) + 1
+            except:
+                new_port_nr = '8001'
 
-        ports = [vhost[-4:] for vhost in vhosts.strip().split('\n')]
-        ports.reverse()
-        new_port_nr = int(ports[0]) + 1
         print 'Port %s will be used for this project' % yellow(new_port_nr)
 
         # create apache/nginx conf files
@@ -184,15 +200,18 @@ class Setup(Task):
             'project_user': project_user,
         }
 
+        remote_file = os.path.join(apache_conf_path, 'vhosts-%s.conf' % full_project_name)
         upload_template(
             filename = os.path.join(local_templates_path, 'apache_vhost.txt'),
-            destination = os.path.join(apache_conf_path, 'vhosts-%s.conf' % full_project_name),
+            destination = remote_file,
             context = context,
             use_sudo = True
         )
+
+        remote_file = os.path.join(nginx_conf_path, 'vhosts-%s.conf' % full_project_name)
         upload_template(
             filename = os.path.join(local_templates_path, 'nginx_vhost.txt'),
-            destination = os.path.join(nginx_conf_path, 'vhosts-%s.conf' % full_project_name),
+            destination = remote_file,
             context = context,
             use_sudo = True
         )
@@ -211,7 +230,7 @@ class Setup(Task):
         sudo('chown -R %s:%s %s' % (project_user, project_user, env.project_path))
 
         # display test results for webserver vhost config files
-        print(green('\nTesting webserver configuration'))
+        print(green('\n\nTesting webserver configuration'))
         with settings(hide('warnings', 'stderr'), warn_only=True):
             sudo('/etc/init.d/httpd configtest')
             sudo('/etc/init.d/nginx configtest')
@@ -234,24 +253,42 @@ class Setup(Task):
         return password.strip()
 
 
-class Enable(Task):
+class Keys(Task):
     """
-    PROV - Enable developer for project by SSH key
+    PROV - Enable devs for project by managing SSH keys
 
         Transfers a selected user's public SSH key to remote user's authorized key.
         This regulates access for admins without having to divulge project passwords.
     """
 
-    name = 'enable'
+    name = 'keys'
+    requirements = [
+        'local_user',
+        'project_name',
+        'project_name_prefix',
+        'provisioning_user',
+    ]
 
     def run(self):
 
-        # connect with provision user (who must have sudo rights on host)
-        # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
-        # make sure local user either knows remote password, or has its local public key on remote end
+        # check if all required project and host settings are present in fabric environment
+        [require(r) for r in self.requirements]
+
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+
+            # connect with provision user (who must have sudo rights on host)
+            # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
+            # make sure local user either knows remote password, or has its local public key on remote end
+            print(green('\nConnecting with user %s ' % yellow(env.provisioning_user)))
             env.update({'user': env.provisioning_user})
-            sudo('ls')  # we want sudo NOW
+
+            # ask for sudo session up front
+            sudo('ls')
+
+            # call task implementation
+            self()
+
+    def __call__(self):
 
         project_user = env.project_name_prefix + env.project_name
         local_ssh_path = os.path.join('/', 'home', env.local_user, '.ssh')
@@ -262,64 +299,65 @@ class Enable(Task):
 
         if not local_key_files:
             abort(red('No public keys found in %s' % local_ssh_path))
-        else:
-            print(green('\nShowing all available public keys in %s:' % local_ssh_path))
+        elif not exists(remote_auth_keys, use_sudo=True):
+            abort(red('No authorized_keys found at %s' % remote_auth_keys))
 
-            # display list of availabe public keys
+        print(green('\nShowing local public keys in %s:' % local_ssh_path))
+        for file in local_key_files:
+            index = local_key_files.index(file)
+            key_file = os.path.join(local_ssh_path, local_key_files[index])
+
+            if self._is_key_authorized(remote_auth_keys, self._read_key(key_file)):
+                print('[%s] %s (already enabled)' % (red(index), file))
+            else:
+                print('[%s] %s' % (green(index), file))
+
+        print('\n[a] enable all local keys')
+        print('[d] disable all remote keys')
+        print('[s] show all remote authorized keys')
+        selection = prompt(yellow('\nSelect option:'), default='a')
+
+        if selection == 'a':
             for file in local_key_files:
+                # grab key from selection (if multiple) or default (if single)
+                key_file = os.path.join(local_ssh_path, file)
+                key_to_transfer = self._read_key(key_file)
+                self._transfer_key(remote_auth_keys, key_to_transfer)
 
-                # grab public key from file and check remote if it's already authorized
-                index = local_key_files.index(file)
-                output = '[%d] %s' % (index, file)
-                key_file = os.path.join(local_ssh_path, local_key_files[index])
+        elif selection == 'd':
+            print(green('\nDisabled all keys'))
+            sudo('rm -f %s' % remote_auth_keys)
+            sudo('touch %s' % remote_auth_keys)
+            sudo('chmod -R 700 %s' % remote_auth_keys)
+            sudo('chown %s:%s %s' % (project_user, project_user, remote_auth_keys))
 
-                # mark keys which are already authorized
-                if self._is_key_authorized(remote_auth_keys, self._read_key(key_file)):
-                    output = output + ' (already authorized)'
+        elif selection == 's':
+            print(green('\nRemote authorized keys:'))
+            print(sudo('cat %s' % remote_auth_keys) or red('[empty]'))
 
-                print output
+        else:
+            try:
+                key_file = os.path.join(local_ssh_path, local_key_files[int(selection)])
+                key_to_transfer = self._read_key(key_file)
+                self._transfer_key(remote_auth_keys, key_to_transfer)
+            except:
+                abort(red('Invalid selection'))
 
-            # save key_list to instance for use in user input validation
-            self.key_list_copy_for_validation = local_key_files
+    def _transfer_key(self, remote_auth_keys, key_to_transfer):
+        """ Appends key to supplied authorized_keys file """
 
-            # ask user which key to transfer
-            _args = (remote_auth_keys, env.environment)
-            selected_key_nr = prompt(
-                yellow('\nTransfer which key to %s on %s?') % _args,
-                default = 0,
-                validate = self._validate_key_selection
-            )
-
-        # grab key from selection (if multiple) or default (if single)
-        key_file = os.path.join(local_ssh_path, local_key_files[selected_key_nr])
-        key_to_transfer = self._read_key(key_file)
-
-        # check if key isn't already present on the remote end
-        if self._is_key_authorized(remote_auth_keys, key_to_transfer):
-            abort(red('Public key already present in remote authorized_keys.'))
-
-        # all is well, so append local user's public key to remote user's authorized_keys
-        print(green('\nTransferring key'))
-        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+        if not self._is_key_authorized(remote_auth_keys, key_to_transfer):
+            print(green('\nTransferring key'))
+            print(key_to_transfer)
             append(remote_auth_keys, key_to_transfer, use_sudo=True)
 
     def _read_key(self, key_file):
+        """ Returns the content of a (public) SSH key-file """
 
-        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-            return '%s' % local('cat %s' % key_file, capture=True).strip()
+        return '%s' % local('cat %s' % key_file, capture=True).strip()
 
     def _is_key_authorized(self, auth_keys_file, public_key):
+        """ Checks if key is present in supplied authorized_keys file """
 
-        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-            authorized_keys = sudo('cat %s' % auth_keys_file)
-            return bool(public_key in authorized_keys.split('\r\n'))
-
-    def _validate_key_selection(self, selected_key_nr):
-
-        try:
-            # check for non-numeric and out-of-bounds
-            self.key_list_copy_for_validation[int(selected_key_nr)]
-        except:
-            raise Exception(red('Invalid key number. See above list for available keys.'))
-
-        return int(selected_key_nr)
+        authorized_keys = sudo('cat %s' % auth_keys_file)
+        return bool(public_key in authorized_keys.split('\r\n'))
