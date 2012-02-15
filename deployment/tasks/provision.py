@@ -8,9 +8,44 @@ from fabric.tasks import Task
 import os
 
 
-class Setup(Task):
+class ProvisioningTask(Task):
     """
-    PROV - Provision project
+    Base class for provisioning tasks
+
+        - checks requirements in fabric environment
+        - sets default level of commandline output verbosity
+        - uses provisioning_user to connect
+        - uses sudo for remote commands
+        - calls task implementation
+    """
+
+    def run(self):
+
+        # check if all required project and host settings are present in fabric environment
+        [require(r) for r in self.requirements]
+
+        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+
+            # connect with provision user (who must have sudo rights on host)
+            # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
+            # make sure local user either knows remote password, or has its local public key on remote end
+            print(green('\nConnecting with user %s ' % magenta(env.provisioning_user)))
+            env.update({'user': env.provisioning_user})
+
+            # ask for sudo session up front
+            sudo('ls')
+
+            # call task implementation in subclass
+            self()
+
+    def __call__(self):
+
+        raise NotImplementedError
+
+
+class Setup(ProvisioningTask):
+    """
+    PROV - Provision a new project
 
         Sets up a new project on a remote server:
             - project user
@@ -52,18 +87,16 @@ class Setup(Task):
         'website_name',
     ]
 
-    def run(self):
+    def __call__(self):
 
-        # check if all required project and host settings are present in fabric environment
-        [require(r) for r in self.requirements]
+        # init paths
+        apache_conf_path = os.path.join('/', 'etc', 'httpd', 'conf.d')
+        nginx_conf_path = os.path.join('/', 'etc', 'nginx', 'conf.d')
+        local_scripts_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'scripts')
+        local_templates_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'templates')
 
-        # connect with provision user (who must have sudo rights on host)
-        # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
-        # make sure local user either knows remote password, or has its local public key on remote end
-        print(green('\nConnecting with user %s ' % yellow(env.provisioning_user)))
-        with settings(hide('running', 'stdout')):
-            env.update({'user': env.provisioning_user})
-            sudo('ls')  # aks for sudo NOW
+        # this full username is also used as a naming default elsewhere
+        project_user = str.join('', [env.project_name_prefix, env.project_name])
 
         # prompt for start
         question = '\nStart provisioning of %s on %s?' % (env.project_name, env.environment)
@@ -71,13 +104,14 @@ class Setup(Task):
             abort(red('\nProvisioning cancelled.'))
 
         # create new project_user
-        project_user = str.join('', [env.project_name_prefix, env.project_name])
-        print(green('\nCreating project user: %s ' % project_user))
+        print(green('\nCreating project user %s ' % project_user))
 
         try:
             # setup new user/pwd
             sudo('useradd %s' % project_user)
-            sudo('passwd %s' % project_user)
+            with(show('stdout')):
+                sudo('passwd %s' % project_user)
+                print('')
 
             # setup SSH for user
             sudo('mkdir /home/%s/.ssh' % project_user)
@@ -86,7 +120,7 @@ class Setup(Task):
             sudo('chown -R %s:%s /home/%s/.ssh' % (project_user, project_user, project_user))
 
         except:
-            # user already exists, ask if this user is available
+            # user already exists, ask if this user is available for reuse
             _args = (project_user, env.project_name, env.environment)
             question = '\nUser %s already exist. Use this user for %s on %s?' % _args
 
@@ -113,8 +147,7 @@ class Setup(Task):
             sudo('mkdir %s' % folder)
 
         # copy files
-        print(green('\n\nCopying script files'))
-        local_scripts_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'scripts')
+        print(green('\nCopying script files'))
         files_to_copy =  os.listdir(local_scripts_path)
 
         for file_name in files_to_copy:
@@ -125,18 +158,17 @@ class Setup(Task):
             )
 
         # ask user input for template based file creation
+        # TODO: security issue for password prompt
         print(yellow('\nProvide info for file creation:'))
-        local_templates_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'templates')
-        full_project_name = str.join('', [env.project_name_prefix, env.project_name])
-        database_name = prompt('Database name: ', default=full_project_name)
-        database_user = prompt('Database username: ', default=full_project_name)
+        database_name = prompt('Database name: ', default=project_user)
+        database_user = prompt('Database username: ', default=project_user)
         database_pass = prompt('Database password: ', validate=self._validate_password)
 
         files_to_create = [
             {'template': 'settings_py.txt', 'file': 'settings.py', },
             {'template': 'credentials_py.txt', 'file': 'scripts/credentials.py', },
             {'template': 'django_wsgi.txt', 'file': 'django.wsgi', },
-            {'template': 'db_provision_user_sql.txt', 'file': 'scripts/db_provision_user.sql', },
+            {'template': 'db_provision_db_sql.txt', 'file': 'scripts/db_provision_db.sql', },
         ]
 
         context = {
@@ -158,36 +190,30 @@ class Setup(Task):
                 use_sudo = True
             )
 
-        # create empty database (uses database root user)
-        print(green('\nCreating empty database'))
-        sudo('mysqladmin --user=%s -p create %s' % (env.provisioning_user, database_name))
-
-        # create new database user with all schema privileges (uses database root user)
-        print(green('\nCreating new database user'))
-        _args = (env.provisioning_user, database_name, os.path.join(env.scripts_path, 'db_provision_user.sql'))
+        # create new database + user with all schema privileges (uses database root user)
+        _args = (database_name, env.provisioning_user)
+        print(green('\nCreating database %s with privileged db-user %s' % _args))
+        print('Password for mysql root user %s: ' % env.provisioning_user)
+        _args = (env.provisioning_user, database_name, os.path.join(env.scripts_path, 'db_provision_db.sql'))
         sudo('mysql --user=%s -p --database="%s" < %s' % _args)
 
         # determine first available port # for vhost
         print(green('\nDetermining port # for project'))
-        apache_conf_path = os.path.join('/', 'etc', 'httpd', 'conf.d')
+        try:
+            # grep vhosts => reverse list => awk top port #
+            output = run('%s | %s | %s' % (
+                'grep -hr "NameVirtualHost" %s' % apache_conf_path,
+                'sort -r',
+                'awk \'{if (NR==1) { print substr($2,3) }}\''
+            ))
+            new_port_nr = int(output) + 1
+        except:
+            new_port_nr = '8001'
 
-        with settings(hide('stdout')):
-            try:
-                # grep vhosts => reverse list => awk top port #
-                output = run('%s | %s | %s' % (
-                    'grep -hr "NameVirtualHost" %s' % apache_conf_path,
-                    'sort -r',
-                    'awk \'{if (NR==1) { print substr($2,3) }}\''
-                ))
-                new_port_nr = int(output) + 1
-            except:
-                new_port_nr = '8001'
+        print('Port %s will be used for this project' % magenta(new_port_nr))
 
-        print 'Port %s will be used for this project' % yellow(new_port_nr)
-
-        # create apache/nginx conf files
+        # create webserver conf files
         print(green('\nCreating vhost conf files'))
-        nginx_conf_path = os.path.join('/', 'etc', 'nginx', 'conf.d')
         context = {
             'port_number': new_port_nr,
             'current_instance_path': env.current_instance_path,
@@ -200,18 +226,15 @@ class Setup(Task):
             'project_user': project_user,
         }
 
-        remote_file = os.path.join(apache_conf_path, 'vhosts-%s.conf' % full_project_name)
         upload_template(
             filename = os.path.join(local_templates_path, 'apache_vhost.txt'),
-            destination = remote_file,
+            destination = os.path.join(apache_conf_path, 'vhosts-%s.conf' % project_user),
             context = context,
             use_sudo = True
         )
-
-        remote_file = os.path.join(nginx_conf_path, 'vhosts-%s.conf' % full_project_name)
         upload_template(
             filename = os.path.join(local_templates_path, 'nginx_vhost.txt'),
-            destination = remote_file,
+            destination = os.path.join(nginx_conf_path, 'vhosts-%s.conf' % project_user),
             context = context,
             use_sudo = True
         )
@@ -226,19 +249,22 @@ class Setup(Task):
                 sudo('htpasswd -bc .htpasswd %s %s' % (env.project_name, htpasswd))
 
         # chown project for project user
-        print(green('\nChowning %s for remote project user %s' % (project_user, env.project_path)))
+        print(green('\nChanging ownership %s to %s' % (env.project_path, project_user)))
         sudo('chown -R %s:%s %s' % (project_user, project_user, env.project_path))
 
         # display test results for webserver vhost config files
-        print(green('\n\nTesting webserver configuration'))
-        with settings(hide('warnings', 'stderr'), warn_only=True):
+        print(green('\nTesting webserver configuration'))
+        with settings(show('stdout')):
             sudo('/etc/init.d/httpd configtest')
             sudo('/etc/init.d/nginx configtest')
+            print('')
 
         # prompt for webserver restart 
         if confirm(yellow('\nOK to restart webserver?')):
-            sudo('/etc/init.d/httpd restart')
-            sudo('/etc/init.d/nginx restart')
+            with settings(show('stdout')):
+                sudo('/etc/init.d/httpd restart')
+                sudo('/etc/init.d/nginx restart')
+                print('')
         else:
             print(magenta('Website will be available when webserver is restarted.'))
 
@@ -253,7 +279,7 @@ class Setup(Task):
         return password.strip()
 
 
-class Keys(Task):
+class Keys(ProvisioningTask):
     """
     PROV - Enable devs for project by managing SSH keys
 
@@ -268,25 +294,6 @@ class Keys(Task):
         'project_name_prefix',
         'provisioning_user',
     ]
-
-    def run(self):
-
-        # check if all required project and host settings are present in fabric environment
-        [require(r) for r in self.requirements]
-
-        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
-
-            # connect with provision user (who must have sudo rights on host)
-            # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
-            # make sure local user either knows remote password, or has its local public key on remote end
-            print(green('\nConnecting with user %s ' % yellow(env.provisioning_user)))
-            env.update({'user': env.provisioning_user})
-
-            # ask for sudo session up front
-            sudo('ls')
-
-            # call task implementation
-            self()
 
     def __call__(self):
 

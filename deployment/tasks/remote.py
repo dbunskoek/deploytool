@@ -42,7 +42,7 @@ class RemoteHost(Task):
         project_name = '%s%s' % (env.project_name_prefix, env.project_name)
         project_path = os.path.join(env.projects_root, project_name)
 
-        print(green('\nInitializing fabric environment for %s.' % yellow(self.name)))
+        print(green('\nInitializing fabric environment for %s.' % magenta(self.name)))
         env.update({
             'cache_path': os.path.join(project_path, 'cache'),
             'current_instance_path': os.path.join(project_path, 'current_instance'),
