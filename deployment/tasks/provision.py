@@ -24,7 +24,7 @@ class ProvisioningTask(Task):
         # check if all required project and host settings are present in fabric environment
         [require(r) for r in self.requirements]
 
-        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+        with settings(hide('running', 'stdout'), warn_only=True):
 
             # connect with provision user (who must have sudo rights on host)
             # note that this user differs from local (e.g 'nick') or project user (e.g. 's-jouwomgeving')
@@ -194,8 +194,8 @@ class Setup(ProvisioningTask):
         _args = (database_name, env.provisioning_user)
         print(green('\nCreating database %s with privileged db-user %s' % _args))
         print('Password for mysql root user %s: ' % env.provisioning_user)
-        _args = (env.provisioning_user, database_name, os.path.join(env.scripts_path, 'db_provision_db.sql'))
-        sudo('mysql --user=%s -p --database="%s" < %s' % _args)
+        _args = (env.provisioning_user, os.path.join(env.scripts_path, 'db_provision_db.sql'))
+        sudo('mysql --user=%s -p < %s' % _args)
 
         # determine first available port # for vhost
         print(green('\nDetermining port # for project'))
