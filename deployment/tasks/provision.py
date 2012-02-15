@@ -168,7 +168,7 @@ class Setup(ProvisioningTask):
             {'template': 'settings_py.txt', 'file': 'settings.py', },
             {'template': 'credentials_py.txt', 'file': 'scripts/credentials.py', },
             {'template': 'django_wsgi.txt', 'file': 'django.wsgi', },
-            {'template': 'db_provision_db_sql.txt', 'file': 'scripts/db_provision_db.sql', },
+            {'template': 'provision_db_sql.txt', 'file': 'scripts/provision_db.sql', },
         ]
 
         context = {
@@ -194,7 +194,7 @@ class Setup(ProvisioningTask):
         _args = (database_name, env.provisioning_user)
         print(green('\nCreating database %s with privileged db-user %s' % _args))
         print('Password for mysql root user %s: ' % env.provisioning_user)
-        _args = (env.provisioning_user, os.path.join(env.scripts_path, 'db_provision_db.sql'))
+        _args = (env.provisioning_user, os.path.join(env.scripts_path, 'provision_db.sql'))
         sudo('mysql --user=%s -p < %s' % _args)
 
         # determine first available port # for vhost
