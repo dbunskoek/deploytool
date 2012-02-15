@@ -99,7 +99,7 @@ class RemoteTask(Task):
         """ Hide output, update fabric env, run task """
 
         # hide fabric output
-        with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+        with settings(hide('running', 'stdout'), warn_only=True):
 
             # check if HOST task was run before this task
             if not hasattr(env, 'current_instance_path'):
@@ -159,6 +159,7 @@ class Deployment(RemoteTask):
         """
 
         with settings(hide('warnings', 'running', 'stdout', 'stderr'), warn_only=True):
+
             # deploy by local commit
             if kwargs.has_key('commit'):
                 self.stamp = kwargs['commit']
@@ -349,16 +350,16 @@ class Media(RemoteTask):
 
         file_name = 'project_media.tar'
         cwd = os.getcwd()
-        
+
         print(green('\nCompressing remote media folder.'))
         utils.commands.create_tarball(env.project_path, 'media', file_name)
-        
+
         print(green('\nDownloading tarball.'))
         utils.commands.download_file(
             remote_path = os.path.join(env.project_path, file_name),
             local_path = os.path.join(cwd, file_name)
         )
-        
+
         print(green('\nSaved media tarball to:'))
         print(os.path.join(cwd, file_name))
 
@@ -386,6 +387,6 @@ class Database(RemoteTask):
             remote_path = os.path.join(env.backup_path, file_name),
             local_path = os.path.join(os.getcwd(), file_name)
         )
-        
+
         print(green('\nSaved backup to:'))
         print(os.path.join(cwd, file_name))
