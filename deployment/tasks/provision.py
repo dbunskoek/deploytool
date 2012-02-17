@@ -47,24 +47,12 @@ class Setup(ProvisioningTask):
     """
     PROV - Provision a new project
 
-        Sets up a new project on a remote server:
+        Setup a new project on a remote server:
             - project user
-            - database
-            - database user
             - files & folders
-            - apache & nginx configuration
+            - database + user
             - optional .htpasswd security
-
-        Requirements:
-            - remote user with sudo rights
-            - database root user with username/pwd equal to sudo user
-            - your ssh public key on remote server or sudo pwd
-
-        Usage:
-            # copy sudo/db-root password to clipboard
-            $ fab staging setup
-            # answer prompted questions
-            # paste pwd if challenged
+            - apache & nginx configuration
     """
 
     name = 'setup'
@@ -105,7 +93,6 @@ class Setup(ProvisioningTask):
 
         # create new project_user
         print(green('\nCreating project user %s ' % project_user))
-
         try:
             # setup new user/pwd
             sudo('useradd %s' % project_user)
