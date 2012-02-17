@@ -47,12 +47,14 @@ class Setup(ProvisioningTask):
     """
     PROV - Provision a new project
 
-        Setup a new project on a remote server:
-            - project user
-            - files & folders
-            - database + user
-            - optional .htpasswd security
-            - apache & nginx configuration
+        [1] create user
+        [2] create folders
+        [3] copy files
+        [4] create files
+        [5] create database + user
+        [6] setup vhosts
+        [7] .htpasswd (optional)
+        [8] restart webservers (optional)
     """
 
     name = 'setup'
@@ -77,21 +79,33 @@ class Setup(ProvisioningTask):
 
     def __call__(self):
 
-        # init paths
+        # full project name (e.g. `s-jouwomgeving`)
+        project_user = str.join('', [env.project_name_prefix, env.project_name])
+
+        # locations of vhost conf files
         apache_conf_path = os.path.join('/', 'etc', 'httpd', 'conf.d')
         nginx_conf_path = os.path.join('/', 'etc', 'nginx', 'conf.d')
+
+        # locations of local folders (based on running fabfile.py) needed for remote file transfers
         local_scripts_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'scripts')
         local_templates_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'templates')
 
-        # this full username is also used as a naming default elsewhere
-        project_user = str.join('', [env.project_name_prefix, env.project_name])
+        # locations of remote paths for setting up project-user's SSH
+        user_ssh_path = os.path.join('/', 'home', project_user, '.ssh')
+        auth_keys_file = os.path.join(user_ssh_path, 'authorized_keys')
+
+        # check for existing project root/path, and abort if found
+        if not exists(env.project_root, use_sudo=True):
+            abort(red('Project root not found at: %s' % env.project_root))
+        if exists(env.project_path, use_sudo=True):
+            abort(red('Project path already exists at: %s' % env.project_path))
 
         # prompt for start
         question = '\nStart provisioning of %s on %s?' % (env.project_name, env.environment)
         if not confirm(yellow(question)):
             abort(red('\nProvisioning cancelled.'))
 
-        # create new project_user
+        # [1] create new project_user
         print(green('\nCreating project user %s ' % project_user))
         try:
             # setup new user/pwd
@@ -101,12 +115,10 @@ class Setup(ProvisioningTask):
                 print('')
 
             # create .ssh in home folder
-            user_ssh_path = os.path.join('/', 'home', project_user, '.ssh')
             if not exists(user_ssh_path, use_sudo=True):
                 sudo('mkdir %s' % user_ssh_path)
 
             # create authorized_keys
-            auth_keys_file = os.path.join(user_ssh_path, 'authorized_keys')
             if not exists(auth_keys_file, use_sudo=True):
                 sudo('touch %s' % auth_keys_file)
 
@@ -122,13 +134,7 @@ class Setup(ProvisioningTask):
             if not confirm(yellow(question)):
                 abort(red('Provisioning aborted because user %s is not available.' % project_user))
 
-        # check for existing project paths, and abort if found
-        if not exists(env.project_root):
-            abort(red('Project root not found at: %s' % env.project_root))
-        if exists(env.project_path):
-            abort(red('Project path already exists at: %s' % env.project_path))
-
-        # create folders
+        # [2] setup project folders
         print(green('\nCreating folders'))
         folders_to_create = [
             env.project_path,
@@ -141,7 +147,7 @@ class Setup(ProvisioningTask):
         for folder in folders_to_create:
             sudo('mkdir %s' % folder)
 
-        # copy files
+        # [3] copy files
         print(green('\nCopying script files'))
         files_to_copy =  os.listdir(local_scripts_path)
 
@@ -175,7 +181,7 @@ class Setup(ProvisioningTask):
             'password': database_pass,
         }
 
-        # create files from templates (using fabric env and user input)
+        # [4] create files from templates (using fabric env and user input)
         print(green('\nCreating project files'))
         for file_to_create in files_to_create:
             upload_template(
@@ -185,12 +191,11 @@ class Setup(ProvisioningTask):
                 use_sudo = True
             )
 
-        # create new database + user with all schema privileges (uses database root user)
+        # [5] create new database + user with all schema privileges (uses database root user)
         _args = (database_name, env.provisioning_user)
         print(green('\nCreating database %s with privileged db-user %s' % _args))
-        print('Password for mysql root user %s: ' % env.provisioning_user)
-        _args = (env.provisioning_user, os.path.join(env.scripts_path, 'provision_db.sql'))
-        sudo('mysql --user=%s -p < %s' % _args)
+        print('Password for mysql root user: ')
+        sudo('mysql --user=root -p < %s' % os.path.join(env.scripts_path, 'provision_db.sql'))
 
         # determine first available port # for vhost
         print(green('\nDetermining port # for project'))
@@ -207,7 +212,7 @@ class Setup(ProvisioningTask):
 
         print('Port %s will be used for this project' % magenta(new_port_nr))
 
-        # create webserver conf files
+        # [6] create webserver conf files
         print(green('\nCreating vhost conf files'))
         context = {
             'port_number': new_port_nr,
@@ -234,7 +239,7 @@ class Setup(ProvisioningTask):
             use_sudo = True
         )
 
-        # ask for optional setup of .htpasswd (used for staging environment)
+        # [7] ask for optional setup of .htpasswd (used for staging environment)
         if confirm(yellow('\nSetup htpasswd for project?')):
             htpasswd_path = os.path.join(env.project_path, 'htpasswd')
             htpasswd = '%s%s' % (env.project_name, datetime.now().year)
@@ -254,14 +259,14 @@ class Setup(ProvisioningTask):
             sudo('/etc/init.d/nginx configtest')
             print('')
 
-        # prompt for webserver restart 
+        # [8] prompt for webserver restart 
         if confirm(yellow('\nOK to restart webserver?')):
             with settings(show('stdout')):
                 sudo('/etc/init.d/httpd restart')
                 sudo('/etc/init.d/nginx restart')
                 print('')
         else:
-            print(magenta('Website will be available when webserver is restarted.'))
+            print(magenta('Website will be available when webservers are restarted.'))
 
     def _validate_password(self, password):
         """ Validator for input prompt when asking for password """
