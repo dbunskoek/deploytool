@@ -113,11 +113,19 @@ class Setup(ProvisioningTask):
                 sudo('passwd %s' % project_user)
                 print('')
 
-            # setup SSH for user
-            sudo('mkdir /home/%s/.ssh' % project_user)
-            sudo('touch /home/%s/.ssh/authorized_keys' % project_user)
-            sudo('chmod -R 700 /home/%s/.ssh' % project_user)
-            sudo('chown -R %s:%s /home/%s/.ssh' % (project_user, project_user, project_user))
+            # create .ssh in home folder
+            user_ssh_path = os.path.join('/', 'home', project_user, '.ssh')
+            if not exists(user_ssh_path, use_sudo=True):
+                sudo('mkdir %s' % user_ssh_path)
+
+            # create authorized_keys
+            auth_keys_file = os.path.join(user_ssh_path, 'authorized_keys')
+            if not exists(auth_keys_file, use_sudo=True):
+                sudo('touch %s' % auth_keys_file)
+
+            # setup .ssh ownership & access
+            sudo('chmod -R 700 %s' % user_ssh_path)
+            sudo('chown -R %s:%s %s' % (project_user, project_user, user_ssh_path))
 
         except:
             # user already exists, ask if this user is available for reuse
