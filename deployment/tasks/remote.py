@@ -224,7 +224,7 @@ class Deployment(RemoteTask):
             print(green('\nLinking media folder.'))
             utils.commands.create_symbolic_link(
                 real_path = os.path.join(env.project_path, 'media'),
-                symbolic_path = os.path.join(env.instance_path, 'media')
+                symbolic_path = os.path.join(env.source_path, 'media')
             )
 
             print(green('\nCollecting static files.'))
