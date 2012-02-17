@@ -1,7 +1,8 @@
-CREATE DATABASE `%(database_name)s`;
+CREATE DATABASE IF NOT EXISTS `%(database_name)s`;
 
 GRANT ALL PRIVILEGES ON `%(database_name)s`.*
 	TO '%(username)s'@'localhost'
 	IDENTIFIED BY '%(password)s'
 	WITH GRANT OPTION;
+
 FLUSH PRIVILEGES;
