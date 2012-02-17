@@ -335,13 +335,24 @@ class Status(RemoteTask):
     def __call__(self):
 
         print(green('\nCurrent instance:'))
-        print(utils.commands.read_link(env.current_instance_path))
+        current_instance = utils.commands.read_link(env.current_instance_path)
+        if current_instance != env.current_instance_path:
+            print(current_instance)
+        else:
+            print(red('[none]'))
 
         print(green('\nPrevious instance:'))
-        print(utils.commands.read_link(env.previous_instance_path))
+        previous_instance = utils.commands.read_link(env.previous_instance_path)
+        if previous_instance != env.previous_instance_path:
+            print(previous_instance)
+        else:
+            print(red('[none]'))
 
         print(green('\nFabric log:'))
-        print(utils.commands.tail_file(os.path.join(env.log_path, 'fabric.log')))
+        if exists(os.path.join(env.log_path, 'fabric.log')):
+            print(utils.commands.tail_file(os.path.join(env.log_path, 'fabric.log')))
+        else:
+            print(red('[empty]'))
 
 
 class Media(RemoteTask):
