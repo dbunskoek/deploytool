@@ -55,6 +55,19 @@ class Setup(ProvisioningTask):
         [6] .htpasswd (optional)
         [7] setup vhosts
         [8] restart webservers (optional)
+
+        Note that this task is intentionally not reversible.
+        Any conflicts need to be fixed manually. Some tips:
+
+            # remove a remote user (including home dir and mail spool)
+            $ /usr/sbin/userdel -rf the_users_name
+
+            # remove all remote project files
+            $ rm -rf /var/www/vhosts/the_project_full_name
+            $ rm /etc/httpd/conf.d/vhosts-the_projects_full_name.conf
+            $ rm /etc/nginx/conf.d/vhosts-the_projects_full_name.conf
+
+            Use a DBMS (i.e. Sequel Pro) for managing databases and its users.
     """
 
     name = 'setup'
@@ -100,38 +113,36 @@ class Setup(ProvisioningTask):
             abort(red('Project path already exists at: %s' % env.project_path))
 
         # prompt for start
-        question = '\nStart provisioning of %s on %s?' % (env.project_name, env.environment)
+        question = '\nStart provisioning of `%s` on `%s`?' % (env.project_name, env.environment)
         if not confirm(yellow(question)):
             abort(red('\nProvisioning cancelled.'))
 
         # [1] create new project_user
-        print(green('\nCreating project user %s ' % project_user))
-        try:
-            # setup new user/pwd
+        print(green('\nCreating project user `%s` ' % project_user))
+        user_exists = bool(run('cat /etc/passwd').find(project_user) > 0)
+
+        if user_exists:
+            # user already exists, ask if this user is available for reuse
+            if not confirm(yellow('User `%s` already exist. Continue anyway? ' % project_user)):
+                abort(red('Aborted by user, because remote user `%s` is not available.' % project_user))
+        else:
+            # add new user/password
             sudo('useradd %s' % project_user)
             with(show('stdout')):
                 sudo('passwd %s' % project_user)
                 print('')
 
-            # create .ssh in home folder
-            if not exists(user_ssh_path, use_sudo=True):
-                sudo('mkdir %s' % user_ssh_path)
+        # create .ssh in home folder
+        if not exists(user_ssh_path, use_sudo=True):
+            sudo('mkdir %s' % user_ssh_path)
 
-            # create authorized_keys
-            if not exists(auth_keys_file, use_sudo=True):
-                sudo('touch %s' % auth_keys_file)
+        # create authorized_keys
+        if not exists(auth_keys_file, use_sudo=True):
+            sudo('touch %s' % auth_keys_file)
 
-            # setup .ssh ownership & access
-            sudo('chmod -R 700 %s' % user_ssh_path)
-            sudo('chown -R %s:%s %s' % (project_user, project_user, user_ssh_path))
-
-        except:
-            # user already exists, ask if this user is available for reuse
-            _args = (project_user, env.project_name, env.environment)
-            question = '\nUser %s already exist. Use this user for %s on %s?' % _args
-
-            if not confirm(yellow(question)):
-                abort(red('Provisioning aborted because user %s is not available.' % project_user))
+        # setup .ssh ownership & access
+        sudo('chmod -R 700 %s' % user_ssh_path)
+        sudo('chown -R %s:%s %s' % (project_user, project_user, user_ssh_path))
 
         # [2] setup project folders
         print(green('\nCreating folders'))
@@ -191,25 +202,26 @@ class Setup(ProvisioningTask):
             )
 
         # [5] create new database + user with all schema privileges (uses database root user)
-        _args = (database_name, env.provisioning_user)
-        print(green('\nCreating database %s with privileged db-user %s' % _args))
-        print('Password for mysql root user: ')
-        sudo('mysql --user=root -p < %s' % os.path.join(env.scripts_path, 'provision_db.sql'))
+        print(green('\nCreating database `%s` with privileged db-user `%s`' % (
+            database_name,
+            project_user
+        )))
 
-        # determine first available port # for vhost
-        print(green('\nDetermining port # for project'))
-        try:
-            # grep vhosts => reverse list => awk top port #
-            output = run('%s | %s | %s' % (
-                'grep -hr "NameVirtualHost" %s' % apache_conf_path,
-                'sort -r',
-                'awk \'{if (NR==1) { print substr($2,3) }}\''
-            ))
-            new_port_nr = int(output) + 1
-        except:
-            new_port_nr = '8001'
+        mysql_password = prompt(yellow('Password for mysql root user: '))
+        mysql_command = 'mysql --batch --user=root --password=%s' % mysql_password
 
-        print('Port %s will be used for this project' % magenta(new_port_nr))
+        output = sudo('%s --skip-column-names -e "SHOW DATABASES LIKE \'%s\'"' % (
+            mysql_command,
+            database_name
+        ))
+        database_exists = bool(output.strip().lower() == database_name.lower())
+
+        if database_exists:
+            if not confirm(yellow('Database `%s` already exists. Continue anyway? ' % database_name)):
+                abort(red('Aborted by user, because database `%s` already exists.' % database_name))
+
+        # all is well, and user is ok should database already exist
+        sudo('%s < %s' % (mysql_command, os.path.join(env.scripts_path, 'provision_db.sql')))
 
         # [6] ask for optional setup of .htpasswd (used for staging environment)
         if confirm(yellow('\nSetup htpasswd for project?')):
@@ -221,13 +233,25 @@ class Setup(ProvisioningTask):
 
         # [7] create webserver conf files
         print(green('\nCreating vhost conf files'))
+        try:
+            # grep vhosts => reverse list => awk top port #
+            output = run('%s | %s | %s' % (
+                'grep -hr "NameVirtualHost" %s' % apache_conf_path,
+                'sort -r',
+                'awk \'{if (NR==1) { print substr($2,3) }}\''
+            ))
+            new_port_nr = int(output) + 1
+            print('Port %s will be used for this project' % magenta(new_port_nr))
+        except:
+            abort(red('Aborted. No available port # for vhost found.'))
+
+        # check if htpasswd is used (some nginx vhost lines will be commented if it isn't)
         if not exists(htpasswd_path, use_sudo=True):
-            # no htpasswd found, so make sure corresponding config lines will be commented out
             use_htpasswd = '#'
         else:
-            # htpasswd found, so no commenting out lines needed
             use_htpasswd = ''
 
+        # assemble context for apache and nginx vhost conf files
         context = {
             'port_number': new_port_nr,
             'current_instance_path': env.current_instance_path,
@@ -241,6 +265,7 @@ class Setup(ProvisioningTask):
             'use_htpasswd': use_htpasswd,
         }
 
+        # create the conf files from template and transfer them to remote server
         upload_template(
             filename = os.path.join(local_templates_path, 'apache_vhost.txt'),
             destination = os.path.join(apache_conf_path, 'vhosts-%s.conf' % project_user),
@@ -255,17 +280,16 @@ class Setup(ProvisioningTask):
         )
 
         # chown project for project user
-        print(green('\nChanging ownership %s to %s' % (env.project_path, project_user)))
+        print(green('\nChanging ownership of %s to `%s`' % (env.project_path, project_user)))
         sudo('chown -R %s:%s %s' % (project_user, project_user, env.project_path))
 
-        # display test results for webserver vhost config files
+        # [8] prompt for webserver restart 
         print(green('\nTesting webserver configuration'))
         with settings(show('stdout')):
             sudo('/etc/init.d/httpd configtest')
             sudo('/etc/init.d/nginx configtest')
             print('')
 
-        # [8] prompt for webserver restart 
         if confirm(yellow('\nOK to restart webserver?')):
             with settings(show('stdout')):
                 sudo('/etc/init.d/httpd restart')
