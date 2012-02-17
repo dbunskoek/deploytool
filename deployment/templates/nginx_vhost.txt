@@ -1,32 +1,32 @@
 upstream backend-%(project_name_prefix)s%(project_name)s {
-	server 127.0.0.1:%(port_number)s;
+    server 127.0.0.1:%(port_number)s;
 }
 
 server {
-	listen 80;
-	server_name %(website_name)s;
+    listen 80;
+    server_name %(website_name)s;
 
-	access_log %(log_path)s/nginx_access.log;
-	error_log %(log_path)s/nginx_error.log;
+    access_log %(log_path)s/nginx_access.log;
+    error_log %(log_path)s/nginx_error.log;
 
-	location / {
-		proxy_pass http://127.0.0.1:%(port_number)s/;
-        # include /etc/nginx/conf.d/proxy.conf;
-        # auth_basic "Staging %(project_name)s";
-        # auth_basic_user_file /var/www/vhosts/s-jouwomgeving/htpasswd/.htpasswd;
-	}
+    location / {
+        proxy_pass http://127.0.0.1:%(port_number)s/;
+        include /etc/nginx/conf.d/proxy.conf;
+        %(use_htpasswd)s auth_basic "Staging %(project_name)s";
+        %(use_htpasswd)s auth_basic_user_file %(project_path)s/htpasswd/.htpasswd;
+        }
 
-	location /media/ {
-		root %(current_instance_path)s;
-		expires max;
-	}
+    location /media/ {
+        root %(current_instance_path)s/%(project_name)s;
+        expires max;
+    }
 
-	location /static/ {
-		root %(current_instance_path)s/jouwomgeving;
-		expires max;
-	}
+    location /static/ {
+        root %(current_instance_path)s/%(project_name)s;
+        expires max;
+    }
 
-	location /media/admin/ {
-		alias %(current_instance_path)s/env/lib/python2.6/site-packages/django/contrib/admin/media/;
-	}
+    location /media/admin/ {
+        alias %(current_instance_path)s/env/lib/python2.6/site-packages/django/contrib/admin/media/;
+    }
 }

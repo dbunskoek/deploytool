@@ -52,8 +52,8 @@ class Setup(ProvisioningTask):
         [3] copy files
         [4] create files
         [5] create database + user
-        [6] setup vhosts
-        [7] .htpasswd (optional)
+        [6] .htpasswd (optional)
+        [7] setup vhosts
         [8] restart webservers (optional)
     """
 
@@ -82,17 +82,16 @@ class Setup(ProvisioningTask):
         # full project name (e.g. `s-jouwomgeving`)
         project_user = str.join('', [env.project_name_prefix, env.project_name])
 
-        # locations of vhost conf files
-        apache_conf_path = os.path.join('/', 'etc', 'httpd', 'conf.d')
-        nginx_conf_path = os.path.join('/', 'etc', 'nginx', 'conf.d')
-
         # locations of local folders (based on running fabfile.py) needed for remote file transfers
         local_scripts_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'scripts')
         local_templates_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'templates')
 
-        # locations of remote paths for setting up project-user's SSH
+        # locations of remote paths
         user_ssh_path = os.path.join('/', 'home', project_user, '.ssh')
         auth_keys_file = os.path.join(user_ssh_path, 'authorized_keys')
+        htpasswd_path = os.path.join(env.project_path, 'htpasswd')
+        apache_conf_path = os.path.join('/', 'etc', 'httpd', 'conf.d')
+        nginx_conf_path = os.path.join('/', 'etc', 'nginx', 'conf.d')
 
         # check for existing project root/path, and abort if found
         if not exists(env.project_root, use_sudo=True):
@@ -212,8 +211,23 @@ class Setup(ProvisioningTask):
 
         print('Port %s will be used for this project' % magenta(new_port_nr))
 
-        # [6] create webserver conf files
+        # [6] ask for optional setup of .htpasswd (used for staging environment)
+        if confirm(yellow('\nSetup htpasswd for project?')):
+            htpasswd = '%s%s' % (env.project_name, datetime.now().year)
+            sudo('mkdir %s' % htpasswd_path)
+
+            with cd(htpasswd_path):
+                sudo('htpasswd -bc .htpasswd %s %s' % (env.project_name, htpasswd))
+
+        # [7] create webserver conf files
         print(green('\nCreating vhost conf files'))
+        if not exists(htpasswd_path, use_sudo=True):
+            # no htpasswd found, so make sure corresponding config lines will be commented out
+            use_htpasswd = '#'
+        else:
+            # htpasswd found, so no commenting out lines needed
+            use_htpasswd = ''
+
         context = {
             'port_number': new_port_nr,
             'current_instance_path': env.current_instance_path,
@@ -224,6 +238,7 @@ class Setup(ProvisioningTask):
             'log_path': env.log_path,
             'admin_email': env.admin_email,
             'project_user': project_user,
+            'use_htpasswd': use_htpasswd,
         }
 
         upload_template(
@@ -238,15 +253,6 @@ class Setup(ProvisioningTask):
             context = context,
             use_sudo = True
         )
-
-        # [7] ask for optional setup of .htpasswd (used for staging environment)
-        if confirm(yellow('\nSetup htpasswd for project?')):
-            htpasswd_path = os.path.join(env.project_path, 'htpasswd')
-            htpasswd = '%s%s' % (env.project_name, datetime.now().year)
-
-            sudo('mkdir %s' % htpasswd_path)
-            with cd(htpasswd_path):
-                sudo('htpasswd -bc .htpasswd %s %s' % (env.project_name, htpasswd))
 
         # chown project for project user
         print(green('\nChanging ownership %s to %s' % (env.project_path, project_user)))
