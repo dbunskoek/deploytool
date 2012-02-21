@@ -4,6 +4,7 @@ Fabric Deployment
 
 Project application for deployment, provisioning and local tasks.
 
+
 Remote requirements:
 ====================
 * Apache
@@ -17,19 +18,36 @@ Remote requirements:
 * Pip (0.8.1+)
 * Python (2.6)
 * python-devel
+* sudo
 * virtualenv (1.6+)
+
 
 Local requirements:
 ===================
 * Fabric (1.2.2+)
 * Git (1.6+)
 
+
 Usage:
 ======
-TODO ...
+Prepare by having passwords at hand for these users:
+* OS: provisioning user (SSH, sudo)
+* OS: project user (deployment tasks)
+* DB: mysql root user (database provisioning)
+* DB: mysql project user (deployment tasks)
+* DJ: django admin user (site admin access)
 
+Provision & deploy the project:
+* Add deployment app to Django project
+* Update fabfile.py (in project root) with correct settings
+* Run setup ('fab staging setup')
+* Manage access ('fab staging keys')
+* First deploy ('fab staging deploy')
+
+
+Examples:
+=========
 ::
-
     # list all available tasks
     $ fab list
 
@@ -41,4 +59,3 @@ TODO ...
 
     # example: deploy latest version of local current branch to staging server
     $ fab staging deploy
-
