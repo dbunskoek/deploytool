@@ -133,7 +133,7 @@ class RemoteTask(Task):
 
 class Deployment(RemoteTask):
     """
-    REMO - Deploy new instance to staging
+    REMO - Deploy new instance
 
         Usage:
 
@@ -328,7 +328,7 @@ class Rollback(RemoteTask):
 
 
 class Status(RemoteTask):
-    """ REMO - Show status information for staging environment """
+    """ REMO - Show status information for remote host """
 
     name = 'status'
 
@@ -356,7 +356,7 @@ class Status(RemoteTask):
 
 
 class Media(RemoteTask):
-    """ REMO - Download media files as archive from staging """
+    """ REMO - Download media files (as archive) """
 
     name = 'media'
 
@@ -379,7 +379,7 @@ class Media(RemoteTask):
 
 
 class Database(RemoteTask):
-    """ REMO - Download database export from staging """
+    """ REMO - Download database (as sqldump) """
 
     name = 'database'
 
