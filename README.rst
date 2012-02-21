@@ -31,6 +31,7 @@ Local requirements:
 Usage:
 ======
 Prepare by having passwords at hand for these users:
+
 * OS: provisioning user (SSH, sudo)
 * OS: project user (deployment tasks)
 * DB: mysql root user (database provisioning)
@@ -38,6 +39,7 @@ Prepare by having passwords at hand for these users:
 * DJ: django admin user (site admin access)
 
 Provision & deploy the project:
+
 * Add deployment app to Django project
 * Update fabfile.py (in project root) with correct settings
 * Run setup ('fab staging setup')
@@ -47,7 +49,9 @@ Provision & deploy the project:
 
 Examples:
 =========
+
 ::
+
     # list all available tasks
     $ fab list
 
@@ -59,3 +63,4 @@ Examples:
 
     # example: deploy latest version of local current branch to staging server
     $ fab staging deploy
+
