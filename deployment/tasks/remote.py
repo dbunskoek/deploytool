@@ -287,6 +287,24 @@ class Deployment(RemoteTask):
         utils.commands.touch_wsgi(env.project_path)
 
         self.log(success=True)
+        self.prune_instances()
+
+
+    def prune_instances(self):
+        """ Find old instances and remove them to free up space """
+
+        old_instances = utils.instance.get_obsolete_instances(env.project_path)
+
+        for instance in old_instances:
+            is_current = bool(utils.instance.get_instance_stamp(env.current_instance_path) == instance)
+            is_previous = bool(utils.instance.get_instance_stamp(env.previous_instance_path) == instance)
+
+            if not (is_current or is_previous):
+                utils.commands.delete(os.path.join(env.project_path, instance))
+
+        if len(old_instances) > 0:
+            print(green('\nThese old instances were removed from remote filesystem:'))
+            print(old_instances)
 
 
 class Rollback(RemoteTask):

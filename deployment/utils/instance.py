@@ -6,6 +6,21 @@ from fabric.contrib.files import *
 import commands
 
 
+def get_obsolete_instances(project_path):
+    """ Return obsolete instances from remote server """
+
+    try:
+        with cd(project_path):
+
+            # list directories, display name only, sort by ctime, filter by git-commit-tag-length
+            command = 'ls -1tcd */ | awk \'{ if(length($1) == 41) { print substr($1,0,40) }}\''
+
+            # split into list and return everything but the 5 newest instances
+            return run(command).split()[5:]
+    except:
+        return []
+
+
 def backup_database(virtualenv_path, scripts_path, file_path):
 
     commands.python_run(
