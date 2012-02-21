@@ -4,7 +4,7 @@ import sys
 from credentials import *
 
 
-command = 'mysqladmin -f --user=%s --password=%s drop %s' % (
+command = 'mysqladmin -f --user="%s" --password="%s" drop "%s"' % (
 	username,
 	password,
 	database	

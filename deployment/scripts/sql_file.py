@@ -4,7 +4,7 @@ import sys
 from credentials import *
 
 
-command = 'mysql --user=%s --password=%s --database=%s < %s' % (
+command = 'mysql --user="%s" --password="%s" --database="%s" < %s' % (
 	username,
 	password,
 	database,
