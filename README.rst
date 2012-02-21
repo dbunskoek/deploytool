@@ -30,6 +30,16 @@ Local requirements:
 
 Usage:
 ======
+Add deployment app to Django project:
+
+::
+
+    $ cd /path/to/project
+    $ git clone git@github.com:leukeleu/deployment-fabric.git
+    $ mv ./deployment-fabric/deployment ./deployment
+    $ mv ./deployment-fabric/fabfile.py ./fabfile.py
+    $ rm -rf ./deployment-fabric
+
 Prepare by having passwords at hand for these users:
 
 * OS: provisioning user (SSH, sudo)
@@ -40,8 +50,7 @@ Prepare by having passwords at hand for these users:
 
 Provision & deploy the project:
 
-* Add deployment app to Django project
-* Update fabfile.py (in project root) with correct settings
+* Update fabfile.py with correct settings
 * Run setup ('fab staging setup')
 * Manage access ('fab staging keys')
 * First deploy ('fab staging deploy')
