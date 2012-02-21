@@ -4,6 +4,12 @@ from fabric.contrib.files import *
 import os
 
 
+def get_folder_size(path):
+    """ Returns human-readable string with total recursive size of path """
+
+    return run('du -h --summarize %s' % path)
+
+
 def create_tarball(project_path, target, file_name='archive.tar'):
     """ Create archive from target file/folder """
 

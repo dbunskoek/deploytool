@@ -334,6 +334,9 @@ class Status(RemoteTask):
 
     def __call__(self):
 
+        print(green('\nCurrent size of entire project:'))
+        print(utils.commands.get_folder_size(env.project_path))
+
         print(green('\nCurrent instance:'))
         current_instance = utils.commands.read_link(env.current_instance_path)
         if current_instance != env.current_instance_path:
