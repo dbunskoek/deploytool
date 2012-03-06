@@ -100,7 +100,8 @@ class Setup(ProvisioningTask):
         local_templates_path = os.path.join(os.path.dirname(env.real_fabfile), 'deployment', 'templates')
 
         # locations of remote paths
-        user_ssh_path = os.path.join('/', 'home', project_user, '.ssh')
+        user_home_path = os.path.join('/', 'home', project_user)
+        user_ssh_path = os.path.join(user_home_path, '.ssh')
         auth_keys_file = os.path.join(user_ssh_path, 'authorized_keys')
         htpasswd_path = os.path.join(env.project_path, 'htpasswd')
         apache_conf_path = os.path.join('/', 'etc', 'httpd', 'conf.d')
@@ -140,9 +141,9 @@ class Setup(ProvisioningTask):
         if not exists(auth_keys_file, use_sudo=True):
             sudo('touch %s' % auth_keys_file)
 
-        # setup .ssh ownership & access
+        # setup ownership & access
         sudo('chmod -R 700 %s' % user_ssh_path)
-        sudo('chown -R %s:%s %s' % (project_user, project_user, user_ssh_path))
+        sudo('chown -R %s:%s %s' % (project_user, project_user, user_home_path))
 
         # [2] setup project folders
         print(green('\nCreating folders'))
