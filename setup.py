@@ -2,6 +2,8 @@ import os
 import sys
 from setuptools import setup, find_packages
 
+version = __import__('deploytool').__version__
+
 if sys.argv[-1] == 'publish': # upload to pypi
     os.system("python setup.py register sdist upload")
     print "You probably want to also tag the version now:"
@@ -11,7 +13,7 @@ if sys.argv[-1] == 'publish': # upload to pypi
 
 setup(
     name='deploytool',
-    version=__import__('deploytool').__version__,
+    version=version,
     license='Apache License, Version 2.0',
 
     install_requires=[
