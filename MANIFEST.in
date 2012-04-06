@@ -1,3 +1,4 @@
 include LICENSE.rst
 include README.rst
 include deploytool/templates/*.txt
+include deploytool/scripts/*.py
