@@ -97,8 +97,8 @@ class Setup(ProvisioningTask):
         project_user = str.join('', [env.project_name_prefix, env.project_name])
 
         # locations of local folders (based on running fabfile.py) needed for remote file transfers
-        local_scripts_path = os.path.join(os.path.dirname(deploytool), 'scripts')
-        local_templates_path = os.path.join(os.path.dirname(deploytool), 'templates')
+        local_scripts_path = os.path.join(os.path.dirname(deploytool.__file__), 'scripts')
+        local_templates_path = os.path.join(os.path.dirname(deploytool.__file__), 'templates')
 
         # locations of remote paths
         user_home_path = os.path.join('/', 'home', project_user)
