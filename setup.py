@@ -3,7 +3,7 @@ import sys
 from setuptools import setup, find_packages
 
 if sys.argv[-1] == 'publish': # upload to pypi
-    os.system("python setup.py sdist upload")
+    os.system("python setup.py register sdist upload")
     print "You probably want to also tag the version now:"
     print "  git tag -a %s -m 'version %s'" % (version, version)
     print "  git push --tags"
@@ -18,7 +18,7 @@ setup(
         'fabric>=1.2.2',
     ],
 
-    description='Deploytool - a Django-Fabric deploytool',
+    description='Deploytool - a Django Fabric deploytool',
     long_description=open('README.rst').read(),
 
     author='Nick Badoux',
