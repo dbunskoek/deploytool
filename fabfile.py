@@ -1,6 +1,6 @@
 import os
 
-import deployment.tasks as tasks
+import deploytool.tasks as tasks
 
 
 project_items = {

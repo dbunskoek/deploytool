@@ -7,7 +7,7 @@ from fabric.operations import require
 from fabric.tasks import Task
 import os
 
-import deployment.utils as utils
+import deploytools.utils as utils
 
 
 class RemoteHost(Task):
