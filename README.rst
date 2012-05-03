@@ -11,7 +11,7 @@ Remote requirements:
 * Cent OS
 * gcc
 * Nginx
-* MYSQL
+* MySQL
 * MySQL-python
 * MySQL-devel
 * OpenSSH

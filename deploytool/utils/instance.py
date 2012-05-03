@@ -52,7 +52,7 @@ def pip_install_requirements(virtualenv_path, source_path, cache_path, log_path)
         abort(red('Could not install packages. Virtual environment or requirements.txt not found.'))
 
     args = (virtualenv_path, requirements_file, cache_path, log_file)
-    run('pip install -E %s -r %s --download-cache=%s --use-mirrors --quiet --log=%s' % args)
+    run('%s/bin/pip install -r %s --download-cache=%s --use-mirrors --quiet --log=%s' % args)
 
 
 def get_instance_stamp(instance_path):
