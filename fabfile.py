@@ -6,15 +6,9 @@ import deploytool.tasks as tasks
 project_items = {
     'admin_email': 'info@example.com',
     'project_name': 'example',
-    'hosts': ['192.168.1.666', ],
-    'projects_root': os.path.join('/', 'path', 'to', 'projects'),
     'provisioning_user': 'sudoer',
-}.items()
-
-live_items = {
-    'website_name': 'www.example.com',
-    'project_name_prefix': 'l-',
-    'environment': 'live',
+    'projects_root': os.path.join('/', 'path', 'to', 'projects'),
+    'hosts': ['192.168.1.1', ],
 }.items()
 
 local_items = {
@@ -28,6 +22,12 @@ staging_items = {
     'website_name': 'subdomain.example.com',
     'project_name_prefix': 's-',
     'environment': 'staging',
+}.items()
+
+live_items = {
+    'website_name': 'www.example.com',
+    'project_name_prefix': 'l-',
+    'environment': 'live',
 }.items()
 
 
