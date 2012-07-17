@@ -77,10 +77,10 @@ def python_run(virtualenv_path, command):
     return run('%s/bin/python %s' % (virtualenv_path, command))
 
 
-def django_manage(virtualenv_path, source_path, command):
+def django_manage(virtualenv_path, project_source_path, command):
     """ Execute Django management command """
 
-    python_path = os.path.join(source_path, 'manage.py')
+    python_path = os.path.join(project_source_path, 'manage.py')
     python_command = '%s %s' % (python_path, command)
     python_run(virtualenv_path, python_command)
 

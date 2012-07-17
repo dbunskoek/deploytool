@@ -42,10 +42,10 @@ def create_virtualenv(virtualenv_path, project_user):
     run('virtualenv %s --no-site-packages' % virtualenv_path)
 
 
-def pip_install_requirements(virtualenv_path, source_path, cache_path, log_path):
+def pip_install_requirements(virtualenv_path, requirements_path, cache_path, log_path):
     """ Requires availability of Pip (0.8.1 or later) on remote system """
 
-    requirements_file = os.path.join(source_path, 'requirements.txt')
+    requirements_file = os.path.join(requirements_path, 'requirements.txt')
     log_file = os.path.join(log_path, 'pip.log')
 
     if not exists(requirements_file) or not exists(virtualenv_path):

@@ -125,6 +125,7 @@ class RemoteTask(Task):
                 'instance_stamp': self.stamp,
                 'instance_path': instance_path,
                 'source_path': os.path.join(instance_path, env.project_name),
+                'project_source_path': os.path.join(instance_path, env.project_name, getattr(env, 'project_source_folder', '')),
                 'virtualenv_path': os.path.join(instance_path, 'env'),
             })
 
@@ -218,7 +219,7 @@ class Deployment(RemoteTask):
             print(green('\nPip installing requirements.'))
             utils.instance.pip_install_requirements(
                 env.virtualenv_path,
-                env.source_path,
+                env.project_source_path,
                 env.cache_path,
                 env.log_path
             )
@@ -226,19 +227,19 @@ class Deployment(RemoteTask):
             print(green('\nCopying settings.py.'))
             utils.commands.copy(
                 from_path = os.path.join(env.project_path, 'settings.py'),
-                to_path = os.path.join(env.source_path, 'settings.py')
+                to_path = os.path.join(env.project_source_path, 'settings.py')
             )
 
             print(green('\nLinking media folder.'))
             utils.commands.create_symbolic_link(
                 real_path = os.path.join(env.project_path, 'media'),
-                symbolic_path = os.path.join(env.source_path, 'media')
+                symbolic_path = os.path.join(env.project_source_path, 'media')
             )
 
             print(green('\nCollecting static files.'))
             utils.commands.django_manage(
                 env.virtualenv_path,
-                env.source_path,
+                env.project_source_path,
                 'collectstatic --link --noinput --verbosity=0 --traceback'
             )
         except:
@@ -264,7 +265,7 @@ class Deployment(RemoteTask):
                     open_shell()
 
                 print(green('\nSyncing database.'))
-                utils.commands.django_manage(env.virtualenv_path, env.source_path, 'syncdb')
+                utils.commands.django_manage(env.virtualenv_path, env.project_source_path, 'syncdb')
                 print('')
 
                 if ('before_migrate' in pause_at):
@@ -272,7 +273,7 @@ class Deployment(RemoteTask):
                     open_shell()
 
                 print(green('\nMigrating database.'))
-                utils.commands.django_manage(env.virtualenv_path, env.source_path, 'migrate')
+                utils.commands.django_manage(env.virtualenv_path, env.project_source_path, 'migrate')
                 print('')
 
             print(green('\nBacking up database at end.'))
