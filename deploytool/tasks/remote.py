@@ -216,6 +216,9 @@ class Deployment(RemoteTask):
             print(green('\nCreating virtual environment.'))
             utils.instance.create_virtualenv(env.virtualenv_path, env.user)
 
+            print(green('\nCopying .pth files.'))
+            put('%s/*.pth' % getattr(env, 'project_source_folder', '.'), '%s/lib/python2.6/site-packages' % env.virtualenv_path)
+
             print(green('\nPip installing requirements.'))
             utils.instance.pip_install_requirements(
                 env.virtualenv_path,
